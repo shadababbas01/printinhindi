@@ -14,7 +14,6 @@ export function planCreditGrant(purchaseId: string, existingGrantForPurchase: un
 
 export type UnlockDecision =
   | { allowed: true; source: 'existing_unlock'; unlockId: string }
-  | { allowed: true; source: 'trial'; consumesTrialUnlock: true }
   | { allowed: true; source: 'flex_credit'; consumesCredit: true }
   | { allowed: true; source: 'unlimited' }
   | { allowed: false; reason: 'no_entitlement' };
@@ -27,8 +26,7 @@ export type UnlockRequestInput = {
   existingUnlock: ExistingUnlock; // most recent unlock for this key, if any
   entitlement: {
     unlimitedDocuments: boolean;
-    tier: 'business' | 'professional' | 'trial' | 'flex' | 'none';
-    trial: { unlocksRemaining: number } | null;
+    tier: 'business' | 'professional' | 'flex' | 'none';
     creditBalance: number;
   };
 };
@@ -36,7 +34,7 @@ export type UnlockRequestInput = {
 // Central "should this document-unlock request consume anything" decision.
 // A document already unlocked within its still-valid reprint window (default
 // 24h, enforced by the caller when writing valid_until) never consumes a
-// second credit/trial-unlock just because window.print() was called again.
+// second credit just because window.print() was called again.
 export function decideUnlock(input: UnlockRequestInput): UnlockDecision {
   const { now, existingUnlock, entitlement } = input;
 
@@ -46,10 +44,6 @@ export function decideUnlock(input: UnlockRequestInput): UnlockDecision {
 
   if (entitlement.unlimitedDocuments) {
     return { allowed: true, source: 'unlimited' };
-  }
-
-  if (entitlement.tier === 'trial' && entitlement.trial && entitlement.trial.unlocksRemaining > 0) {
-    return { allowed: true, source: 'trial', consumesTrialUnlock: true };
   }
 
   if (entitlement.creditBalance > 0) {

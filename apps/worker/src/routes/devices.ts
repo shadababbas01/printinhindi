@@ -11,13 +11,12 @@ function json(body: unknown, status = 200) {
 async function currentDeviceLimit(env: Env, userId: string): Promise<number> {
   const db = serviceClient(env);
   const now = new Date();
-  const [{ data: plansRows }, { data: subs }, { data: purchases }, { data: overrides }, { data: trial }, { data: wallet }] =
+  const [{ data: plansRows }, { data: subs }, { data: purchases }, { data: overrides }, { data: wallet }] =
     await Promise.all([
       db.from('plans').select('id, unlimited_documents, device_limit, validity_days'),
       db.from('subscriptions').select('plan_id, status, current_period_end').eq('user_id', userId),
       db.from('purchases').select('plan_id, status, paid_at').eq('user_id', userId).eq('status', 'PAID'),
       db.from('entitlement_overrides').select('plan_id, active_from, active_until').eq('user_id', userId),
-      db.from('trials').select('*').eq('user_id', userId).maybeSingle(),
       db.from('credit_wallets').select('balance').eq('user_id', userId).maybeSingle(),
     ]);
   const plans: Record<string, PlanRow & { validity_days?: number }> = {};
@@ -28,7 +27,6 @@ async function currentDeviceLimit(env: Env, userId: string): Promise<number> {
     subscriptions: subs ?? [],
     purchases: purchases ?? [],
     overrides: overrides ?? [],
-    trial: trial ?? null,
     creditBalance: wallet?.balance ?? 0,
     deviceCount: 0,
   });

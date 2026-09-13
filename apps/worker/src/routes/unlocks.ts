@@ -11,13 +11,12 @@ function json(body: unknown, status = 200) {
 async function loadEntitlement(env: Env, userId: string) {
   const db = serviceClient(env);
   const now = new Date();
-  const [{ data: plansRows }, { data: subs }, { data: purchases }, { data: overrides }, { data: trial }, { data: wallet }] =
+  const [{ data: plansRows }, { data: subs }, { data: purchases }, { data: overrides }, { data: wallet }] =
     await Promise.all([
       db.from('plans').select('id, unlimited_documents, device_limit, validity_days'),
       db.from('subscriptions').select('plan_id, status, current_period_end').eq('user_id', userId),
       db.from('purchases').select('plan_id, status, paid_at').eq('user_id', userId).eq('status', 'PAID'),
       db.from('entitlement_overrides').select('plan_id, active_from, active_until').eq('user_id', userId),
-      db.from('trials').select('*').eq('user_id', userId).maybeSingle(),
       db.from('credit_wallets').select('balance').eq('user_id', userId).maybeSingle(),
     ]);
   const plans: Record<string, PlanRow & { validity_days?: number }> = {};
@@ -28,7 +27,6 @@ async function loadEntitlement(env: Env, userId: string) {
     subscriptions: subs ?? [],
     purchases: purchases ?? [],
     overrides: overrides ?? [],
-    trial: trial ?? null,
     creditBalance: wallet?.balance ?? 0,
     deviceCount: 0,
   });
@@ -76,25 +74,14 @@ export async function handleCreateUnlock(env: Env, request: Request): Promise<Re
     .insert({
       user_id: user.id,
       client_unlock_key: body.clientUnlockKey,
-      source: decision.source === 'trial' ? 'trial' : decision.source === 'flex_credit' ? 'flex_credit' : 'trial',
+      source: decision.source === 'flex_credit' ? 'flex_credit' : 'unlimited',
       valid_until: validUntil.toISOString(),
     })
     .select('id')
     .single();
   if (error || !inserted) return json({ error: 'UNLOCK_RECORD_FAILED' }, 500);
 
-  if ('consumesTrialUnlock' in decision) {
-    const { error: rpcErr } = await db.rpc('increment_trial_unlocks', { p_user_id: user.id });
-    if (rpcErr) {
-      // Fallback if the RPC helper isn't installed yet: read-modify-write
-      // (acceptable low-contention risk for a single-user trial counter).
-      const { data: t } = await db.from('trials').select('trial_unlocks_used').eq('user_id', user.id).maybeSingle();
-      await db
-        .from('trials')
-        .update({ trial_unlocks_used: (t?.trial_unlocks_used ?? 0) + 1 })
-        .eq('user_id', user.id);
-    }
-  } else if ('consumesCredit' in decision) {
+  if ('consumesCredit' in decision) {
     await db.from('credit_transactions').insert({
       user_id: user.id,
       delta: -1,

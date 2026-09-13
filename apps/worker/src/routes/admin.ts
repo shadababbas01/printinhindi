@@ -204,68 +204,51 @@ export async function handleAdminGrantCredits(env: Env, request: Request): Promi
   return json({ ok: true });
 }
 
+// Undoes an admin-granted plan (the entitlement_overrides row(s) created by
+// handleAdminGrantEntitlement's 'override' mechanism). Ends any currently
+// active override immediately rather than deleting it, so the grant/clear
+// history stays visible on the row. This does NOT touch real Cashfree
+// subscriptions or paid annual purchases — those are cancelled/refunded
+// through their own flows, not this "manual correction" lever.
+export async function handleAdminClearPlan(env: Env, request: Request, userId: string): Promise<Response> {
+  const admin = await requireAdmin(env, request);
+  if (isResponse(admin)) return admin;
+
+  const db = serviceClient(env);
+  const now = new Date().toISOString();
+  const { error } = await db
+    .from('entitlement_overrides')
+    .update({ active_until: now })
+    .eq('user_id', userId)
+    .gt('active_until', now);
+  if (error) return json({ error: 'PLAN_CLEAR_FAILED' }, 500);
+  return json({ ok: true });
+}
+
 export async function handleAdminGetEntitlement(env: Env, request: Request, userId: string): Promise<Response> {
   const admin = await requireAdmin(env, request);
   if (isResponse(admin)) return admin;
   return json(await loadEntitlement(env, userId));
 }
 
-// "Print count" in product terms is the trial's document-unlock counter
-// (`trials.trial_unlocks_used`, spec section 8/18 — the app never learns
-// whether a user's OS print dialog was actually used, only that a document
-// was unlocked). This surfaces the raw row plus recent unlock history so an
-// admin can see/adjust it without going to the Supabase SQL editor.
-export async function handleAdminGetTrial(env: Env, request: Request, userId: string): Promise<Response> {
+// "Print count" in product terms is just the document-unlock history — the
+// app never learns whether a user's OS print dialog was actually used, only
+// that a document was unlocked. Useful for support debugging without going
+// to the Supabase SQL editor. (There's no free trial to manage anymore —
+// every unlock now comes from Flex credits, a plan, or a per-page payment.)
+export async function handleAdminGetUnlockHistory(env: Env, request: Request, userId: string): Promise<Response> {
   const admin = await requireAdmin(env, request);
   if (isResponse(admin)) return admin;
 
   const db = serviceClient(env);
-  const [{ data: trial }, { data: unlocks }] = await Promise.all([
-    db.from('trials').select('*').eq('user_id', userId).maybeSingle(),
-    db
-      .from('document_unlocks')
-      .select('id, source, unlocked_at, valid_until')
-      .eq('user_id', userId)
-      .order('unlocked_at', { ascending: false })
-      .limit(50),
-  ]);
+  const { data: unlocks } = await db
+    .from('document_unlocks')
+    .select('id, source, unlocked_at, valid_until')
+    .eq('user_id', userId)
+    .order('unlocked_at', { ascending: false })
+    .limit(50);
 
-  return json({ trial: trial ?? null, unlocks: unlocks ?? [] });
-}
-
-// Directly edits the trial row — e.g. give a customer a few extra free
-// unlocks as goodwill, extend their trial window, or reset a miscounted
-// value. Any field left out is kept as-is (or defaulted only on first
-// creation of the row).
-export async function handleAdminAdjustTrial(env: Env, request: Request): Promise<Response> {
-  const admin = await requireAdmin(env, request);
-  if (isResponse(admin)) return admin;
-
-  const body = (await request.json().catch(() => null)) as
-    | {
-        userId?: string;
-        trialUnlocksUsed?: number;
-        trialUnlockLimit?: number;
-        trialEndsAt?: string; // ISO date
-      }
-    | null;
-  if (!body?.userId) return json({ error: 'INVALID_BODY' }, 400);
-
-  const db = serviceClient(env);
-  const { data: existing } = await db.from('trials').select('*').eq('user_id', body.userId).maybeSingle();
-  const now = new Date().toISOString();
-
-  const row = {
-    user_id: body.userId,
-    trial_started_at: existing?.trial_started_at ?? now,
-    trial_ends_at: body.trialEndsAt ?? existing?.trial_ends_at ?? new Date(Date.now() + 7 * 86400000).toISOString(),
-    trial_unlock_limit: body.trialUnlockLimit ?? existing?.trial_unlock_limit ?? 10,
-    trial_unlocks_used: body.trialUnlocksUsed ?? existing?.trial_unlocks_used ?? 0,
-  };
-
-  const { error } = await db.from('trials').upsert(row, { onConflict: 'user_id' });
-  if (error) return json({ error: 'TRIAL_ADJUST_FAILED' }, 500);
-  return json({ ok: true, trial: row });
+  return json({ unlocks: unlocks ?? [] });
 }
 
 export async function handleAdminRevokeDevice(env: Env, request: Request, deviceId: string): Promise<Response> {

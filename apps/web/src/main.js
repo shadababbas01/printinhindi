@@ -12,7 +12,6 @@ auth.init().then(() => {
   });
 });
 
-// TODO (Phase 6, spec section 5): mount the logged-out/trial/Professional/
-// Business header states here once the header markup grows account-aware
-// slots. For now the print button gate above is the functional core of the
-// monetization flow end-to-end.
+// TODO: mount logged-out/Professional/Business header states here once the
+// header markup grows account-aware slots. For now the print button gate
+// above is the functional core of the monetization flow end-to-end.

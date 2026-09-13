@@ -16,7 +16,7 @@ function cashfreeConfig(env: Env): CashfreeConfig {
   };
 }
 
-// One-time purchases only: flex_25, professional_annual, business_annual.
+// One-time purchases only: flex_10, professional_annual, business_annual.
 // The client sends ONLY a planId — never an amount. The price is looked up
 // server-side from the `plans` table, which is the only source of truth.
 export async function handleCreateOrder(env: Env, request: Request): Promise<Response> {

@@ -10,7 +10,7 @@ describe('decideUnlock — document unlock is not the same as a confirmed print'
       now: NOW,
       clientUnlockKey: 'sess-1',
       existingUnlock: { id: 'u1', client_unlock_key: 'sess-1', valid_until: '2026-09-13T18:00:00Z' },
-      entitlement: { unlimitedDocuments: false, tier: 'flex', trial: null, creditBalance: 3 },
+      entitlement: { unlimitedDocuments: false, tier: 'flex', creditBalance: 3 },
     });
     expect(decision).toEqual({ allowed: true, source: 'existing_unlock', unlockId: 'u1' });
   });
@@ -20,29 +20,19 @@ describe('decideUnlock — document unlock is not the same as a confirmed print'
       now: NOW,
       clientUnlockKey: 'sess-1',
       existingUnlock: { id: 'u1', client_unlock_key: 'sess-1', valid_until: '2026-09-12T00:00:00Z' },
-      entitlement: { unlimitedDocuments: false, tier: 'flex', trial: null, creditBalance: 3 },
+      entitlement: { unlimitedDocuments: false, tier: 'flex', creditBalance: 3 },
     });
     expect(decision.source).not.toBe('existing_unlock');
   });
 
-  it('unlimited-plan users never consume trial/credit units', () => {
+  it('unlimited-plan users never consume credit units', () => {
     const decision = decideUnlock({
       now: NOW,
       clientUnlockKey: 'sess-2',
       existingUnlock: null,
-      entitlement: { unlimitedDocuments: true, tier: 'professional', trial: null, creditBalance: 0 },
+      entitlement: { unlimitedDocuments: true, tier: 'professional', creditBalance: 0 },
     });
     expect(decision).toEqual({ allowed: true, source: 'unlimited' });
-  });
-
-  it('trial user with remaining unlocks consumes a trial unlock', () => {
-    const decision = decideUnlock({
-      now: NOW,
-      clientUnlockKey: 'sess-3',
-      existingUnlock: null,
-      entitlement: { unlimitedDocuments: false, tier: 'trial', trial: { unlocksRemaining: 2 }, creditBalance: 0 },
-    });
-    expect(decision).toEqual({ allowed: true, source: 'trial', consumesTrialUnlock: true });
   });
 
   it('flex user with credits consumes exactly one credit', () => {
@@ -50,17 +40,17 @@ describe('decideUnlock — document unlock is not the same as a confirmed print'
       now: NOW,
       clientUnlockKey: 'sess-4',
       existingUnlock: null,
-      entitlement: { unlimitedDocuments: false, tier: 'flex', trial: null, creditBalance: 1 },
+      entitlement: { unlimitedDocuments: false, tier: 'flex', creditBalance: 1 },
     });
     expect(decision).toEqual({ allowed: true, source: 'flex_credit', consumesCredit: true });
   });
 
-  it('rejects unlock when trial exhausted and no credits', () => {
+  it('rejects unlock when there is no entitlement and no credits — no free trial to fall back on', () => {
     const decision = decideUnlock({
       now: NOW,
       clientUnlockKey: 'sess-5',
       existingUnlock: null,
-      entitlement: { unlimitedDocuments: false, tier: 'none', trial: { unlocksRemaining: 0 }, creditBalance: 0 },
+      entitlement: { unlimitedDocuments: false, tier: 'none', creditBalance: 0 },
     });
     expect(decision).toEqual({ allowed: false, reason: 'no_entitlement' });
   });

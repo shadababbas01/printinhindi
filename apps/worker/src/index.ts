@@ -18,11 +18,11 @@ import {
   handleRejectManualPayment,
   handleAdminGrantEntitlement,
   handleAdminGrantCredits,
+  handleAdminClearPlan,
   handleAdminGetEntitlement,
   handleAdminRevokeDevice,
   handleAdminSearchUser,
-  handleAdminGetTrial,
-  handleAdminAdjustTrial,
+  handleAdminGetUnlockHistory,
 } from './routes/admin';
 
 export interface Env {
@@ -116,6 +116,9 @@ export default {
         res = await handleAdminGrantEntitlement(env, request);
       } else if (path === '/api/v1/admin/credits/grant' && request.method === 'POST') {
         res = await handleAdminGrantCredits(env, request);
+      } else if (path.startsWith('/api/v1/admin/entitlement/') && path.endsWith('/clear') && request.method === 'POST') {
+        const userId = path.split('/')[5];
+        res = await handleAdminClearPlan(env, request, userId);
       } else if (path.startsWith('/api/v1/admin/entitlement/') && request.method === 'GET') {
         const userId = path.split('/').pop()!;
         res = await handleAdminGetEntitlement(env, request, userId);
@@ -124,11 +127,9 @@ export default {
         res = await handleAdminRevokeDevice(env, request, id);
       } else if (path === '/api/v1/admin/users/search' && request.method === 'GET') {
         res = await handleAdminSearchUser(env, request);
-      } else if (path.startsWith('/api/v1/admin/trial/') && request.method === 'GET') {
+      } else if (path.startsWith('/api/v1/admin/unlocks/') && request.method === 'GET') {
         const userId = path.split('/').pop()!;
-        res = await handleAdminGetTrial(env, request, userId);
-      } else if (path === '/api/v1/admin/trial/adjust' && request.method === 'POST') {
-        res = await handleAdminAdjustTrial(env, request);
+        res = await handleAdminGetUnlockHistory(env, request, userId);
       } else {
         res = new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
           status: 404,

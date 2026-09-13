@@ -52,7 +52,7 @@ export async function gatePrintDocument(hooks) {
       onConfirmed: () => hooks.openChecklistModal(),
     });
 
-  // Best-effort: if the backend entitlement system (trial/credits/plan) is
+  // Best-effort: if the backend entitlement system (credits/plan) is
   // configured and reachable, honor it. But NEVER let a backend error block
   // printing entirely — any failure here (network, misconfigured
   // Supabase/Worker, etc.) falls through to the pay-per-page flow below

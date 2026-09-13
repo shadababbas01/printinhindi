@@ -81,6 +81,22 @@
       </section>
 
       <section class="panel-section">
+        <h2 class="font-bold mb-3">Clear a user's plan</h2>
+        <p class="text-xs text-gray-500 mb-3">
+          Ends any admin-granted plan override for this user right now, so their
+          entitlement falls back to whatever's next in priority (a real
+          subscription/purchase if they have one, otherwise Flex credits, otherwise
+          none). This does not cancel a real Cashfree subscription or refund a
+          purchase — use Cashfree for that.
+        </p>
+        <div class="flex gap-2 max-w-xl">
+          <input id="clearPlanUserId" class="field-input" placeholder="User ID (uuid)" />
+          <button id="clearPlanSubmitBtn" class="btn btn-secondary">Clear plan</button>
+        </div>
+        <span id="clearPlanStatus" class="text-xs text-gray-500 ml-2"></span>
+      </section>
+
+      <section class="panel-section">
         <h2 class="font-bold mb-3">Adjust credits directly</h2>
         <div class="grid sm:grid-cols-3 gap-2 max-w-2xl">
           <input id="creditUserId" class="field-input" placeholder="User ID (uuid)" />
@@ -92,35 +108,18 @@
       </section>
 
       <section class="panel-section">
-        <h2 class="font-bold mb-3">Manage a user's print count (free trial)</h2>
+        <h2 class="font-bold mb-3">A user's print/unlock history</h2>
         <p class="text-xs text-gray-500 mb-3">
-          "Print count" here means the trial's document-unlock counter — the app
-          only ever knows a document was unlocked for printing, not that the OS
-          print dialog was actually used. This is the only place to view/edit it
-          without going to the Supabase SQL editor.
+          There's no free trial — every unlock comes from Flex credits, a plan, or a
+          per-page payment. This shows a user's recent document-unlock history for
+          support debugging (the app only ever knows a document was unlocked for
+          printing, not that the OS print dialog was actually used).
         </p>
         <div class="flex gap-2 max-w-xl mb-2">
-          <input id="trialUserId" class="field-input" placeholder="User ID (uuid)" />
-          <button id="trialLoadBtn" class="btn btn-secondary">Load</button>
+          <input id="unlockHistoryUserId" class="field-input" placeholder="User ID (uuid)" />
+          <button id="unlockHistoryLoadBtn" class="btn btn-secondary">Load</button>
         </div>
-        <div id="trialInfo" class="text-xs text-gray-500 mb-3"></div>
-        <div class="grid sm:grid-cols-3 gap-2 max-w-2xl">
-          <div>
-            <label class="text-xs font-semibold block mb-1">Unlocks used</label>
-            <input id="trialUnlocksUsed" type="number" class="field-input" />
-          </div>
-          <div>
-            <label class="text-xs font-semibold block mb-1">Unlock limit</label>
-            <input id="trialUnlockLimit" type="number" class="field-input" />
-          </div>
-          <div>
-            <label class="text-xs font-semibold block mb-1">Trial ends at</label>
-            <input id="trialEndsAt" type="datetime-local" class="field-input" />
-          </div>
-        </div>
-        <button id="trialSaveBtn" class="btn btn-primary mt-2">Save</button>
-        <span id="trialStatus" class="text-xs text-gray-500 ml-2"></span>
-        <div id="trialUnlockHistory" class="mt-3"></div>
+        <div id="unlockHistoryTable"></div>
       </section>
 
       <section class="panel-section">

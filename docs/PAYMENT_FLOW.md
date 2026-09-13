@@ -27,7 +27,7 @@ derived from the document's bytes or filename.
 
 ```
 Pricing modal → "Choose" on Flex
-  → POST /api/v1/payments/order {planId: "flex_25"}
+  → POST /api/v1/payments/order {planId: "flex_10"}
       (server looks up price from `plans`, creates a PENDING `purchases` row,
        creates the Cashfree order, returns payment_session_id)
   → Cashfree hosted checkout (modal)

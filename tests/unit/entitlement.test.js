@@ -7,7 +7,7 @@ const PLANS = {
   professional_monthly: { id: 'professional_monthly', unlimited_documents: true, device_limit: 1 },
   business_monthly: { id: 'business_monthly', unlimited_documents: true, device_limit: 3 },
   professional_annual: { id: 'professional_annual', unlimited_documents: true, device_limit: 1, validity_days: 365 },
-  flex_25: { id: 'flex_25', unlimited_documents: false, device_limit: 1 },
+  flex_10: { id: 'flex_10', unlimited_documents: false, device_limit: 1 },
 };
 
 function baseInput(overrides = {}) {
@@ -17,7 +17,6 @@ function baseInput(overrides = {}) {
     subscriptions: [],
     purchases: [],
     overrides: [],
-    trial: null,
     creditBalance: 0,
     deviceCount: 0,
     ...overrides,
@@ -25,96 +24,21 @@ function baseInput(overrides = {}) {
 }
 
 describe('computeEntitlement priority order', () => {
-  it('returns none only once a trial has actually started and been exhausted/expired', () => {
-    const r = computeEntitlement(
-      baseInput({
-        trial: {
-          trial_started_at: '2026-08-01T00:00:00Z',
-          trial_ends_at: '2026-08-08T00:00:00Z', // expired relative to NOW
-          trial_unlock_limit: 10,
-          trial_unlocks_used: 2,
-        },
-      })
-    );
+  it('returns none when nothing is active — there is no free trial', () => {
+    const r = computeEntitlement(baseInput());
     expect(r.tier).toBe('none');
     expect(r.status).toBe('none');
   });
 
-  it('a brand-new user (no trial row yet) is trial-eligible, not "none" — otherwise their first Print click would be rejected before the trial can ever start', () => {
-    const r = computeEntitlement(baseInput());
-    expect(r.tier).toBe('trial');
-    expect(r.status).toBe('active');
-    expect(r.trial).toEqual({ unlocksRemaining: 10, daysRemaining: 7 });
-  });
-
-  it('grants flex tier when credits are available and the trial is already used up (not merely unstarted)', () => {
-    const r = computeEntitlement(
-      baseInput({
-        creditBalance: 12,
-        trial: {
-          trial_started_at: '2026-09-01T00:00:00Z',
-          trial_ends_at: '2026-09-08T00:00:00Z', // expired relative to NOW
-          trial_unlock_limit: 10,
-          trial_unlocks_used: 10, // also exhausted
-        },
-      })
-    );
+  it('grants flex tier when credits are available', () => {
+    const r = computeEntitlement(baseInput({ creditBalance: 12 }));
     expect(r.tier).toBe('flex');
     expect(r.source).toBe('credits');
+    expect(r.planId).toBe('flex_10');
     expect(r.unlimitedDocuments).toBe(false);
   });
 
-  it('an unstarted trial outranks purchased Flex credits — spend the free allocation first', () => {
-    const r = computeEntitlement(baseInput({ creditBalance: 12 }));
-    expect(r.tier).toBe('trial');
-    expect(r.creditBalance).toBe(12); // credits are preserved, just not the active tier yet
-  });
-
-  it('grants trial tier over flex credits (trial ranks higher in priority)', () => {
-    const r = computeEntitlement(
-      baseInput({
-        creditBalance: 5,
-        trial: {
-          trial_started_at: '2026-09-10T00:00:00Z',
-          trial_ends_at: '2026-09-17T00:00:00Z',
-          trial_unlock_limit: 10,
-          trial_unlocks_used: 3,
-        },
-      })
-    );
-    expect(r.tier).toBe('trial');
-    expect(r.trial.unlocksRemaining).toBe(7);
-  });
-
-  it('does not grant an expired trial even if unlocks remain', () => {
-    const r = computeEntitlement(
-      baseInput({
-        trial: {
-          trial_started_at: '2026-08-01T00:00:00Z',
-          trial_ends_at: '2026-08-08T00:00:00Z', // in the past relative to NOW
-          trial_unlock_limit: 10,
-          trial_unlocks_used: 2,
-        },
-      })
-    );
-    expect(r.tier).not.toBe('trial');
-  });
-
-  it('does not grant a trial that exhausted its unlock count even if time remains', () => {
-    const r = computeEntitlement(
-      baseInput({
-        trial: {
-          trial_started_at: '2026-09-10T00:00:00Z',
-          trial_ends_at: '2026-09-20T00:00:00Z',
-          trial_unlock_limit: 10,
-          trial_unlocks_used: 10,
-        },
-      })
-    );
-    expect(r.tier).not.toBe('trial');
-  });
-
-  it('grants annual entitlement over trial/credits', () => {
+  it('grants annual entitlement over flex credits', () => {
     const r = computeEntitlement(
       baseInput({
         creditBalance: 5,

@@ -31,12 +31,12 @@ export const adminApi = {
 
   grantEntitlement: (userId, planId, reason) =>
     apiFetch('/api/v1/admin/entitlement/grant', { method: 'POST', body: JSON.stringify({ userId, planId, reason }) }),
+  clearPlan: (userId) => apiFetch(`/api/v1/admin/entitlement/${userId}/clear`, { method: 'POST' }),
   grantCredits: (userId, amount, reason) =>
     apiFetch('/api/v1/admin/credits/grant', { method: 'POST', body: JSON.stringify({ userId, amount, reason }) }),
   getEntitlement: (userId) => apiFetch(`/api/v1/admin/entitlement/${userId}`),
   searchUserByEmail: (email) => apiFetch(`/api/v1/admin/users/search?email=${encodeURIComponent(email)}`),
   revokeDevice: (deviceId) => apiFetch(`/api/v1/admin/devices/${deviceId}/revoke`, { method: 'POST' }),
 
-  getTrial: (userId) => apiFetch(`/api/v1/admin/trial/${userId}`),
-  adjustTrial: (payload) => apiFetch('/api/v1/admin/trial/adjust', { method: 'POST', body: JSON.stringify(payload) }),
+  getUnlockHistory: (userId) => apiFetch(`/api/v1/admin/unlocks/${userId}`),
 };

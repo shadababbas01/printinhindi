@@ -120,6 +120,23 @@ function wireForms() {
     }
   });
 
+  $('clearPlanSubmitBtn').addEventListener('click', async () => {
+    const userId = $('clearPlanUserId').value.trim();
+    const status = $('clearPlanStatus');
+    if (!userId) {
+      status.textContent = 'User ID is required.';
+      return;
+    }
+    if (!confirm('Clear this user\'s current admin-granted plan? This cannot be undone.')) return;
+    status.textContent = 'Clearing…';
+    try {
+      await adminApi.clearPlan(userId);
+      status.textContent = 'Cleared.';
+    } catch (err) {
+      status.textContent = err.message;
+    }
+  });
+
   $('creditSubmitBtn').addEventListener('click', async () => {
     const userId = $('creditUserId').value.trim();
     const amount = parseInt($('creditAmount').value, 10);
@@ -138,29 +155,15 @@ function wireForms() {
     }
   });
 
-  $('trialLoadBtn').addEventListener('click', async () => {
-    const userId = $('trialUserId').value.trim();
-    const info = $('trialInfo');
-    const history = $('trialUnlockHistory');
+  $('unlockHistoryLoadBtn').addEventListener('click', async () => {
+    const userId = $('unlockHistoryUserId').value.trim();
+    const table = $('unlockHistoryTable');
     if (!userId) return;
-    info.textContent = 'Loading…';
-    history.innerHTML = '';
+    table.textContent = 'Loading…';
     try {
-      const { trial, unlocks } = await adminApi.getTrial(userId);
-      if (trial) {
-        $('trialUnlocksUsed').value = trial.trial_unlocks_used;
-        $('trialUnlockLimit').value = trial.trial_unlock_limit;
-        $('trialEndsAt').value = trial.trial_ends_at ? trial.trial_ends_at.slice(0, 16) : '';
-        info.textContent = `Trial started ${new Date(trial.trial_started_at).toLocaleString()}.`;
-      } else {
-        $('trialUnlocksUsed').value = 0;
-        $('trialUnlockLimit').value = 10;
-        $('trialEndsAt').value = '';
-        info.textContent = 'No trial row yet — this user is still trial-eligible (their trial starts on first document unlock). Saving here will start it immediately with the values below.';
-      }
-      history.innerHTML = unlocks.length
-        ? `<p class="text-xs font-semibold mb-1">Recent document unlocks (${unlocks.length})</p>` +
-          `<table><thead><tr><th>When</th><th>Source</th><th>Valid until</th></tr></thead><tbody>` +
+      const { unlocks } = await adminApi.getUnlockHistory(userId);
+      table.innerHTML = unlocks.length
+        ? `<table><thead><tr><th>When</th><th>Source</th><th>Valid until</th></tr></thead><tbody>` +
           unlocks
             .map(
               (u) =>
@@ -168,33 +171,9 @@ function wireForms() {
             )
             .join('') +
           `</tbody></table>`
-        : '<p class="text-xs text-gray-500">No document unlocks yet.</p>';
+        : '<p class="text-sm text-gray-500">No document unlocks yet.</p>';
     } catch (err) {
-      info.textContent = err.message;
-    }
-  });
-
-  $('trialSaveBtn').addEventListener('click', async () => {
-    const userId = $('trialUserId').value.trim();
-    const status = $('trialStatus');
-    if (!userId) {
-      status.textContent = 'Load a user first.';
-      return;
-    }
-    const trialUnlocksUsed = parseInt($('trialUnlocksUsed').value, 10);
-    const trialUnlockLimit = parseInt($('trialUnlockLimit').value, 10);
-    const trialEndsAtRaw = $('trialEndsAt').value;
-    status.textContent = 'Saving…';
-    try {
-      await adminApi.adjustTrial({
-        userId,
-        trialUnlocksUsed: Number.isInteger(trialUnlocksUsed) ? trialUnlocksUsed : undefined,
-        trialUnlockLimit: Number.isInteger(trialUnlockLimit) ? trialUnlockLimit : undefined,
-        trialEndsAt: trialEndsAtRaw ? new Date(trialEndsAtRaw).toISOString() : undefined,
-      });
-      status.textContent = 'Saved.';
-    } catch (err) {
-      status.textContent = err.message;
+      table.innerHTML = `<p class="text-sm text-red-600">${err.message}</p>`;
     }
   });
 
