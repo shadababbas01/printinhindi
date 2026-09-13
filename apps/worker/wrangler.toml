@@ -7,8 +7,8 @@ compatibility_date = "2026-09-01"
 [vars]
 CASHFREE_ENV = "sandbox"
 CASHFREE_API_VERSION = "2026-01-01"
-APP_BASE_URL = "http://localhost:5173"
-CORS_ALLOWED_ORIGIN = "http://localhost:5173"
+APP_BASE_URL = "https://shadababbas01.github.io/printinhindi"
+CORS_ALLOWED_ORIGIN = "https://shadababbas01.github.io"
 ADMIN_EMAIL_ALLOWLIST = "shadababbas.25@gmail.com"
 
 # Secrets (set via `wrangler secret put NAME`, one per line, never in this file):
