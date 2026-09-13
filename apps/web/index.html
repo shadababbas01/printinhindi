@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>हिंदी रजिस्ट्री प्रिंट टूल / Hindi Registry Print Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+<style>
+  :root{
+    --page1-top: 105mm;
+    --page2-top: 20mm;
+    --left-margin: 31.75mm;
+    --right-margin: 19.05mm;
+    --bottom-margin: 20mm;
+    --doc-font-size: 14pt;
+    --doc-line-height: 1.8;
+    --page-w: 215.9mm;
+    --page-h: 355.6mm;
+
+    /* ---- Design tokens ---- */
+    --brand-1: #4f46e5;
+    --brand-2: #7c3aed;
+    --brand-3: #6d28d9;
+    --brand-grad: linear-gradient(135deg, var(--brand-1), var(--brand-2));
+    --ink: #1e2433;
+    --ink-soft: #64748b;
+    --surface: #ffffff;
+    --surface-soft: #f8fafc;
+    --line: #e6e9f0;
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    --shadow-card: 0 1px 2px rgba(30,36,51,0.04), 0 6px 16px -4px rgba(30,36,51,0.08);
+    --shadow-card-hover: 0 2px 4px rgba(30,36,51,0.06), 0 12px 28px -6px rgba(30,36,51,0.14);
+  }
+  html, body { font-family: 'Inter', 'Segoe UI', Tahoma, Arial, sans-serif; color: var(--ink); }
+
+  /* Control panel scrollbar */
+  #controlPanel::-webkit-scrollbar { width: 8px; }
+  #controlPanel::-webkit-scrollbar-track { background: transparent; }
+  #controlPanel::-webkit-scrollbar-thumb { background: #d6dae3; border-radius: 8px; }
+  #controlPanel::-webkit-scrollbar-thumb:hover { background: #b9c0cd; }
+  html.dark #controlPanel::-webkit-scrollbar-thumb { background: #374151; }
+
+  /* ---- Section cards ---- */
+  .panel-section {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+  .panel-section:hover { box-shadow: var(--shadow-card-hover); }
+  html.dark .panel-section { background: #1a2232; border-color: #2a3346; }
+  .panel-section-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+    color: var(--ink); margin-bottom: 10px;
+  }
+  .panel-section-icon {
+    width: 22px; height: 22px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--brand-grad); font-size: 12px; flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(79,70,229,0.35);
+  }
+  html.dark .panel-section-title { color: #e5e7eb; }
+  .field-label { font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+  html.dark .field-label { color: #9aa5b7; }
+
+  /* ---- Inputs ---- */
+  .field-select, .field-input {
+    width: 100%; border: 1.5px solid var(--line); border-radius: var(--radius-sm);
+    padding: 8px 10px; font-size: 13px; background: var(--surface); color: var(--ink);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    appearance: none;
+  }
+  .field-select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath fill-rule='evenodd' d='M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z' clip-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center; background-size: 16px;
+    padding-right: 30px; cursor: pointer;
+  }
+  .field-select:focus, .field-input:focus {
+    outline: none; border-color: var(--brand-1); box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+  }
+  html.dark .field-select, html.dark .field-input { background-color: #111827; border-color: #374151; color: #e5e7eb; }
+
+  /* ---- Buttons ---- */
+  .btn { display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.2s ease, background 0.15s ease; user-select: none; border: none; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--brand-grad); color: #fff; padding: 11px 16px; font-size: 13.5px;
+    box-shadow: 0 4px 14px -2px rgba(79,70,229,0.45), 0 1px 2px rgba(79,70,229,0.3);
+  }
+  .btn-primary:hover { box-shadow: 0 8px 22px -4px rgba(79,70,229,0.55), 0 2px 4px rgba(79,70,229,0.35); transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--surface-soft); color: var(--ink); padding: 10px 16px; font-size: 13px;
+    border: 1.5px solid var(--line);
+  }
+  .btn-secondary:hover { background: #eef1f6; border-color: #d6dae3; }
+  html.dark .btn-secondary { background: #1f2937; color: #e5e7eb; border-color: #374151; }
+  html.dark .btn-secondary:hover { background: #263041; }
+  .btn-accent {
+    background: linear-gradient(135deg, #9333ea, #c026d3); color: #fff; padding: 10px 16px; font-size: 13px;
+    box-shadow: 0 4px 14px -2px rgba(192,38,211,0.4);
+  }
+  .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -4px rgba(192,38,211,0.5); }
+  .btn-ghost { background: transparent; color: var(--brand-1); font-size: 12px; font-weight: 600; padding: 4px; }
+  .btn-ghost:hover { text-decoration: underline; }
+
+  /* ---- Range sliders ---- */
+  input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px;
+    background: linear-gradient(90deg, var(--brand-1) var(--val, 50%), #e2e6ee var(--val, 50%));
+    cursor: pointer; outline: none;
+  }
+  html.dark input[type=range] { background: linear-gradient(90deg, var(--brand-2) var(--val, 50%), #374151 var(--val, 50%)); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 17px; height: 17px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--brand-1); box-shadow: 0 2px 6px rgba(79,70,229,0.5);
+    cursor: pointer; transition: transform 0.15s ease;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type=range]::-moz-range-thumb {
+    width: 17px; height: 17px; border-radius: 50%; background: #fff; border: 3px solid var(--brand-1);
+    box-shadow: 0 2px 6px rgba(79,70,229,0.5); cursor: pointer;
+  }
+
+  /* ---- Upload dropzone ---- */
+  .upload-dropzone {
+    border: 2px dashed #c7cede; border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, #fafbff, #f3f4ff);
+    padding: 22px 16px; text-align: center; cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  }
+  .upload-dropzone:hover { border-color: var(--brand-1); transform: translateY(-1px); }
+  .upload-dropzone.drag-active { border-color: var(--brand-1); background: linear-gradient(180deg, #eef0ff, #e6e9ff); }
+  html.dark .upload-dropzone { background: linear-gradient(180deg, #171f2e, #131a27); border-color: #374151; }
+  .upload-icon {
+    width: 40px; height: 40px; margin: 0 auto 8px; border-radius: 12px;
+    background: var(--brand-grad); display: flex; align-items: center; justify-content: center;
+    font-size: 18px; box-shadow: 0 4px 12px rgba(79,70,229,0.35);
+  }
+
+  /* ---- Empty state ---- */
+  .empty-state-card {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    color: var(--ink-soft); text-align: center; max-width: 320px; margin: 0 auto;
+  }
+  .empty-state-icon {
+    width: 64px; height: 64px; border-radius: 20px; background: var(--brand-grad);
+    display: flex; align-items: center; justify-content: center; font-size: 28px;
+    box-shadow: 0 10px 28px -6px rgba(79,70,229,0.4); margin-bottom: 4px;
+  }
+  .registry-content {
+    font-family: 'Noto Sans Devanagari', sans-serif;
+    font-size: var(--doc-font-size);
+    line-height: var(--doc-line-height);
+    color: #000000;
+    text-rendering: optimizeLegibility;
+    font-variant-ligatures: common-ligatures;
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: none;
+    word-break: keep-all;
+    text-align: justify;
+  }
+  .registry-content p { margin-bottom: 0.5em; text-indent: 0; }
+  .registry-content strong, .registry-content b { font-weight: 700; }
+  .registry-content h2 { font-size: 1.15em; font-weight: 700; margin: 0.6em 0 0.4em; }
+  .registry-content h3 { font-size: 1.08em; font-weight: 700; margin: 0.5em 0 0.3em; }
+  .registry-content h4 { font-size: 1.02em; font-weight: 700; margin: 0.4em 0 0.3em; }
+  .registry-content table { table-layout: fixed; width: 100%; border-collapse: collapse; margin: 0.5em 0; }
+  .registry-content td, .registry-content th { border: 1px solid #000; padding: 4px 8px; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; font-size: inherit; }
+  .registry-content ul, .registry-content ol { margin: 0.4em 0 0.4em 1.5em; }
+
+  /* Advanced page-break handling */
+  .registry-content h2, .registry-content h3, .registry-content h4 { page-break-after: avoid; break-after: avoid; }
+  .registry-content h2 + p, .registry-content h3 + p, .registry-content h4 + p { page-break-before: avoid; break-before: avoid; }
+  .registry-content table { page-break-inside: avoid; break-inside: avoid; }
+  .registry-content tr { page-break-inside: avoid; break-inside: avoid; }
+  .registry-content thead { display: table-header-group; }
+  .registry-content .signature-block { page-break-inside: avoid; break-inside: avoid; }
+
+  /* Wide tables */
+  .wide-table { font-size: calc(var(--doc-font-size) * 0.85); line-height: 1.4; }
+  .wide-table td, .wide-table th { padding: 2px 4px; }
+  .wide-table-flag {
+    display: inline-block; margin: 2px 0 6px; padding: 2px 6px; font-size: 11px;
+    background: #fef3c7; color: #92400e; border: 1px solid #f59e0b; border-radius: 4px;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  /* Header bar */
+  .app-header {
+    background: var(--brand-grad);
+    color: #fff;
+    box-shadow: 0 2px 12px rgba(79,70,229,0.35);
+    position: relative;
+    z-index: 20;
+  }
+  .app-logo-badge {
+    width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+    backdrop-filter: blur(4px); flex-shrink: 0;
+  }
+  .app-header-btn {
+    font-size: 12px; background: rgba(255,255,255,0.14); padding: 6px 10px; border-radius: 8px;
+    transition: background 0.15s ease, transform 0.15s ease; font-weight: 500;
+  }
+  .app-header-btn:hover { background: rgba(255,255,255,0.26); transform: translateY(-1px); }
+
+  /* Dark mode (UI shell only — preview stays white) */
+  html.dark {
+    --surface: #1a2232;
+    --surface-soft: #0f1521;
+    --ink: #e5e7eb;
+    --ink-soft: #94a3b8;
+    --line: #2a3346;
+  }
+  html.dark body { background: #0b0f19; color: #e5e7eb; }
+  html.dark #controlPanel { border-color: #1f2937; }
+  html.dark #controlPanel .text-gray-800, html.dark #controlPanel .text-gray-700, html.dark #controlPanel .text-gray-600, html.dark #controlPanel .text-gray-500, html.dark #controlPanel .text-gray-400 { color: #9aa5b7 !important; }
+  html.dark .preview-background { background: #030712; }
+  html.dark .empty-state-card p { color: #94a3b8 !important; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px;
+  }
+  .modal-box { background: #fff; border-radius: 8px; max-width: 480px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 20px; }
+  html.dark .modal-box { background: #1f2937; color: #e5e7eb; }
+
+  /* Full-size preview */
+  .fullsize-preview .scaled-wrap { transform: none !important; }
+  .tooltip-icon { cursor: help; font-size: 11px; color: #6b7280; }
+
+  /* ---- Preview (screen) ---- */
+  .preview-background {
+    background:
+      radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255,255,255,0.9), rgba(255,255,255,0) 70%),
+      linear-gradient(180deg, #eef1f6 0%, #dde2ea 100%);
+  }
+  html.dark .preview-background {
+    background:
+      radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255,255,255,0.05), rgba(255,255,255,0) 70%),
+      linear-gradient(180deg, #0b0f19 0%, #05070c 100%);
+  }
+  .page-shadow {
+    box-shadow:
+      0 1px 2px rgba(15,23,42,0.10),
+      0 10px 20px -4px rgba(15,23,42,0.18),
+      0 28px 56px -18px rgba(15,23,42,0.30);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+  }
+  .page-card:hover .page-shadow {
+    box-shadow:
+      0 2px 4px rgba(15,23,42,0.12),
+      0 16px 28px -6px rgba(15,23,42,0.22),
+      0 36px 70px -16px rgba(15,23,42,0.34);
+  }
+  .page-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+    animation: pageFadeIn 0.35s ease forwards;
+  }
+  @keyframes pageFadeIn {
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .page-label {
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: #64748b;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(4px);
+    padding: 3px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(100,116,139,0.18);
+    box-shadow: 0 1px 3px rgba(15,23,42,0.08);
+  }
+  html.dark .page-label { background: rgba(31,41,55,0.85); color: #cbd5e1; border-color: rgba(203,213,225,0.15); }
+  .print-page {
+    background: #fff;
+    width: var(--page-w);
+    min-height: var(--page-h);
+    box-sizing: border-box;
+    position: relative;
+    padding-left: var(--left-margin);
+    padding-right: var(--right-margin);
+    padding-bottom: var(--bottom-margin);
+  }
+  .print-page.page-1 { padding-top: var(--page1-top); }
+  .print-page.page-n { padding-top: var(--page2-top); }
+
+  .stamp-zone-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: var(--page1-top);
+    background: rgba(100,150,220,0.28);
+    border-bottom: 2px dashed #3b5bdb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1e3a8a;
+    font-weight: 600;
+    font-size: 12px;
+    font-family: 'Segoe UI', sans-serif;
+    pointer-events: none;
+  }
+  .page-number-footer {
+    position: absolute;
+    bottom: 4mm;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 10pt;
+    font-family: 'Noto Sans Devanagari', sans-serif;
+    color: #333;
+  }
+  .page-break-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #94a3b8;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    font-family: 'Segoe UI', sans-serif;
+    width: 100%;
+  }
+  .page-break-indicator::before, .page-break-indicator::after {
+    content: '';
+    flex: 1;
+    border-top: 1.5px dashed #b6c0cf;
+  }
+
+  .scaled-wrap { transform-origin: top center; }
+
+  input[type=range] { accent-color: #2563eb; }
+
+  /* Zoom controls */
+  .zoom-controls {
+    display: flex; align-items: center; gap: 2px;
+    background: #fff; border: 1px solid #d1d5db; border-radius: 8px; padding: 2px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+  }
+  html.dark .zoom-controls { background: #1f2937; border-color: #374151; }
+  .zoom-btn {
+    width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; font-size: 14px; font-weight: 700; color: #475569; cursor: pointer;
+    user-select: none; transition: background 0.15s ease;
+  }
+  .zoom-btn:hover { background: #f1f5f9; }
+  html.dark .zoom-btn { color: #cbd5e1; }
+  html.dark .zoom-btn:hover { background: #374151; }
+  .zoom-readout { font-size: 11px; font-weight: 600; color: #64748b; min-width: 42px; text-align: center; font-family: 'Segoe UI', sans-serif; }
+  html.dark .zoom-readout { color: #94a3b8; }
+
+  /* Format toolbar (content editing) */
+  .format-toolbar {
+    display: flex; align-items: center; gap: 1px;
+    background: #fff; border: 1px solid #d1d5db; border-radius: 8px; padding: 2px;
+    box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+  }
+  html.dark .format-toolbar { background: #1f2937; border-color: #374151; }
+  .fmt-btn {
+    width: 28px; height: 26px; display: flex; align-items: center; justify-content: center;
+    border-radius: 6px; color: #475569; cursor: pointer; font-size: 13px;
+    transition: background 0.15s ease, color 0.15s ease; user-select: none;
+  }
+  .fmt-btn:hover { background: #f1f5f9; color: var(--brand-1); }
+  html.dark .fmt-btn { color: #cbd5e1; }
+  html.dark .fmt-btn:hover { background: #374151; }
+  .fmt-sep { width: 1px; height: 18px; background: #e2e6ee; margin: 0 3px; }
+  html.dark .fmt-sep { background: #374151; }
+
+  /* Editable preview page cue */
+  .registry-content[contenteditable="true"] {
+    outline: 2px dashed rgba(79,70,229,0.35);
+    outline-offset: 6px;
+    cursor: text;
+    border-radius: 2px;
+  }
+  .registry-content[contenteditable="true"]:focus { outline-color: rgba(79,70,229,0.7); }
+
+  /* ---- Print ---- */
+  @media print {
+    @page { size: 8.5in 14in; margin: 0; } /* live-updated via CSSOM in JS to match the selected paper size */
+    html, body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .no-print { display: none !important; }
+    .preview-background, .page-shadow, .stamp-zone-overlay, .page-break-indicator { display: none !important; }
+    .scaled-wrap { transform: none !important; }
+    .print-page {
+      width: var(--page-w);
+      min-height: var(--page-h);
+      padding-left: var(--left-margin);
+      padding-right: var(--right-margin);
+      padding-bottom: var(--bottom-margin);
+      box-shadow: none;
+      margin: 0;
+      page-break-after: always;
+    }
+    .print-page.page-1 { padding-top: var(--page1-top); }
+    .print-page.page-n { padding-top: var(--page2-top); }
+    .print-page:last-child { page-break-after: auto; }
+    .registry-content p { page-break-inside: avoid; break-inside: avoid; orphans: 3; widows: 3; }
+    .registry-content table { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+
+<div class="app-header no-print flex items-center justify-between px-4 py-2.5">
+  <div class="flex items-center gap-2.5">
+    <div class="app-logo-badge">📜</div>
+    <div class="leading-tight">
+      <h1 class="text-[13.5px] font-bold tracking-tight">हिंदी रजिस्ट्री प्रिंट टूल</h1>
+      <p class="text-[10.5px] text-white/70 font-medium">Hindi Registry Print Tool</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    <button id="helpBtn" class="app-header-btn">ℹ️ सहायता / Help</button>
+    <button id="darkModeToggle" class="app-header-btn">🌙</button>
+  </div>
+</div>
+
+<div class="no-print flex flex-col lg:flex-row overflow-hidden" style="height: calc(100vh - 38px);">
+
+  <!-- LEFT PANEL -->
+  <div id="controlPanel" class="no-print w-full lg:w-[380px] flex-shrink-0 bg-[var(--surface-soft)] border-r border-gray-200 overflow-y-auto p-4 space-y-4">
+
+    <!-- File Queue -->
+    <div id="fileQueueBox" class="hidden panel-section text-xs space-y-1"></div>
+    <button id="nextDocBtn" class="hidden btn btn-accent w-full">📄 अगला दस्तावेज़ / Next Document</button>
+
+    <!-- Upload -->
+    <div class="panel-section">
+      <div class="panel-section-title"><span class="panel-section-icon">📤</span>फ़ाइल अपलोड / File Upload</div>
+      <div id="dropZone" class="upload-dropzone">
+        <div class="upload-icon">📁</div>
+        <p class="text-[13px] text-gray-600 mb-3 leading-snug">फ़ाइल यहाँ खींचें या नीचे बटन दबाएँ<br><span class="text-gray-400">Drag file here or click below</span></p>
+        <button id="chooseFileBtn" class="btn btn-primary" style="display:inline-flex; padding:9px 18px;">फ़ाइल चुनें / Choose File</button>
+        <input type="file" id="fileInput" accept=".docx" multiple class="hidden">
+      </div>
+      <div id="fileInfo" class="mt-2 text-xs text-gray-500 hidden"></div>
+      <div id="uploadSpinner" class="hidden mt-2 flex items-center gap-2 text-sm text-[var(--brand-1)]">
+        <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+        पढ़ा जा रहा है / Parsing...
+      </div>
+    </div>
+
+    <!-- State preset + Font Encoding -->
+    <div class="panel-section space-y-3">
+      <div class="panel-section-title"><span class="panel-section-icon">⚙️</span>दस्तावेज़ सेटिंग्स / Document Settings</div>
+      <div>
+        <label class="field-label block mb-1">पेपर आकार / Paper Size</label>
+        <select id="paperSize" class="field-select">
+          <option value="legal">Legal (8.5 × 14 in)</option>
+          <option value="a4">A4 (210 × 297 mm)</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label block mb-1">राज्य / State Stamp Paper Type</label>
+        <select id="statePreset" class="field-select">
+          <option value="custom">Custom (Manual)</option>
+          <option value="110">Maharashtra (e-Stamp) — 110mm</option>
+          <option value="105" data-key="up">Uttar Pradesh (Non-Judicial) — 105mm</option>
+          <option value="100" data-key="raj">Rajasthan (e-Stamp) — 100mm</option>
+          <option value="108">Delhi (e-Stamp) — 108mm</option>
+          <option value="105" data-key="mp">Madhya Pradesh — 105mm</option>
+          <option value="100" data-key="ka">Karnataka — 100mm</option>
+          <option value="102">Tamil Nadu — 102mm</option>
+          <option value="105" data-key="gj">Gujarat — 105mm</option>
+          <option value="105" data-key="hr">Haryana — 105mm</option>
+          <option value="105" data-key="pb">Punjab — 105mm</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label block mb-1">फ़ॉण्ट एन्कोडिंग / Font Encoding</label>
+        <select id="fontEncoding" class="field-select">
+          <option value="auto">Auto-Detect (स्वतः पहचान)</option>
+          <option value="kruti">Force Kruti Dev 010 Conversion</option>
+          <option value="devlys">Force Devlys 010 Conversion</option>
+          <option value="none">No Conversion / Unicode (यूनिकोड)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Margins -->
+    <div class="panel-section space-y-3.5">
+      <div class="panel-section-title"><span class="panel-section-icon">📐</span>हाशिया / Margins</div>
+      <div>
+        <div class="flex justify-between field-label mb-1"><span>पृष्ठ 1 ऊपरी हाशिया / Page 1 Top Margin <span class="tooltip-icon" title="यह स्टाम्प पेपर के शीर्ष भाग (सरकारी मुहर/ई-स्टाम्प) के नीचे से टेक्स्ट शुरू करता है / Text starts below this point, leaving space for the stamp header">ℹ️</span></span><span id="val-page1Top" class="font-semibold text-[var(--brand-1)]">105mm</span></div>
+        <input type="range" id="page1Top" min="50" max="160" step="1" value="105" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between field-label mb-1"><span>अन्य पृष्ठ ऊपरी हाशिया / Other Pages Top Margin</span><span id="val-page2Top" class="font-semibold text-[var(--brand-1)]">20mm</span></div>
+        <input type="range" id="page2Top" min="10" max="50" step="1" value="20" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between field-label mb-1"><span>बायाँ हाशिया / Left Margin</span><span id="val-leftMargin" class="font-semibold text-[var(--brand-1)]">31.75mm</span></div>
+        <input type="range" id="leftMargin" min="15" max="50" step="0.25" value="31.75" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between field-label mb-1"><span>दायाँ हाशिया / Right Margin</span><span id="val-rightMargin" class="font-semibold text-[var(--brand-1)]">19.05mm</span></div>
+        <input type="range" id="rightMargin" min="10" max="40" step="0.25" value="19.05" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between field-label mb-1"><span>निचला हाशिया / Bottom Margin</span><span id="val-bottomMargin" class="font-semibold text-[var(--brand-1)]">20mm</span></div>
+        <input type="range" id="bottomMargin" min="10" max="40" step="1" value="20" class="w-full">
+      </div>
+    </div>
+
+    <!-- Typography -->
+    <div class="panel-section space-y-3.5">
+      <div class="panel-section-title"><span class="panel-section-icon">🔤</span>टाइपोग्राफी / Typography</div>
+      <div>
+        <div class="flex justify-between field-label mb-1"><span>फ़ॉण्ट आकार / Font Size</span><span id="val-fontSize" class="font-semibold text-[var(--brand-1)]">14pt</span></div>
+        <input type="range" id="fontSize" min="10" max="20" step="0.5" value="14" class="w-full">
+      </div>
+      <div>
+        <div class="flex justify-between field-label mb-1"><span>पंक्ति अंतर / Line Spacing</span><span id="val-lineHeight" class="font-semibold text-[var(--brand-1)]">1.8</span></div>
+        <input type="range" id="lineHeight" min="1.0" max="3.0" step="0.1" value="1.8" class="w-full">
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="space-y-2">
+      <button id="printDocBtn" class="btn btn-primary w-full">🖨️ दस्तावेज़ प्रिंट करें / Print Document</button>
+      <button id="printTestBtn" class="btn btn-secondary w-full">🎯 टेस्ट पेज प्रिंट करें / Print Test Page</button>
+      <button id="resetBtn" class="btn btn-ghost w-full">🔄 रीसेट / Reset All</button>
+    </div>
+
+    <div class="panel-section text-xs text-gray-500 !shadow-none !border-dashed">
+      <p class="font-semibold mb-1 text-gray-700">🖨️ प्रिंट सेटिंग्स / Print Settings:</p>
+      <p>• Paper size: <span id="printSettingsPaperSize">Legal (8.5 × 14 in)</span> चुनें</p>
+      <p>• Margins: None / कोई नहीं</p>
+      <p>• Scale: 100% (Default / Actual Size)</p>
+      <p>• Headers & Footers: OFF / बंद करें</p>
+    </div>
+
+    <!-- Kruti Dev test panel -->
+    <div class="panel-section">
+      <button id="testPanelToggle" class="text-xs font-semibold text-gray-600 flex items-center gap-1.5 w-full text-left">
+        <span id="testPanelArrow">▶</span> Kruti Dev टेस्ट / Test Kruti Dev Input
+      </button>
+      <div id="testPanelBody" class="hidden mt-2 space-y-2">
+        <input type="text" id="krutiTestInput" placeholder="Kruti Dev टेक्स्ट यहाँ पेस्ट करें..." class="field-input">
+        <div id="krutiTestOutput" class="field-input min-h-[2rem] bg-[var(--surface-soft)]" style="font-family:'Noto Sans Devanagari',sans-serif;"></div>
+      </div>
+    </div>
+
+    <!-- Document Stats -->
+    <div class="panel-section">
+      <button id="statsPanelToggle" class="text-xs font-semibold text-gray-600 flex items-center gap-1.5 w-full text-left">
+        <span id="statsPanelArrow">▶</span> 📊 दस्तावेज़ विवरण / Document Stats
+      </button>
+      <div id="statsPanelBody" class="hidden mt-2 text-xs text-gray-600 space-y-1"></div>
+    </div>
+
+    <!-- Shortcuts -->
+    <div class="panel-section">
+      <button id="shortcutsPanelToggle" class="text-xs font-semibold text-gray-600 flex items-center gap-1.5 w-full text-left">
+        <span id="shortcutsPanelArrow">▶</span> ⌨️ शॉर्टकट / Shortcuts
+      </button>
+      <div id="shortcutsPanelBody" class="hidden mt-2 text-xs text-gray-600 space-y-1">
+        <p>Ctrl+P — प्रिंट चेकलिस्ट / Print checklist</p>
+        <p>Ctrl+T — टेस्ट पेज प्रिंट / Print test page</p>
+        <p>Ctrl+R — सभी रीसेट / Reset all</p>
+        <p>Ctrl+O — फ़ाइल अपलोड / Open file</p>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div id="statusArea" class="space-y-2"></div>
+
+    <div class="pt-1 text-center text-[10px] text-gray-400 leading-relaxed">
+      v1.0 — आपके दस्तावेज़ सुरक्षित और निजी रहते हैं। Registry document files और उनका content आपके browser में locally process होता है और हमारे server पर upload/store नहीं किया जाता। Account, licence और payment-related information केवल authentication और billing के लिए securely process होती है।<br>
+      Private by design. Registry document files and their contents are processed locally in your browser and are not uploaded to or stored on our server. Only account, licensing and payment-related information is processed securely for authentication and billing.
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="rightPanel" class="flex-1 overflow-auto preview-background p-6">
+    <div id="emptyState" class="h-full flex items-center justify-center">
+      <div class="empty-state-card">
+        <div class="empty-state-icon">📜</div>
+        <p class="text-sm font-semibold" style="color:var(--ink);">कोई दस्तावेज़ अपलोड नहीं किया गया</p>
+        <p class="text-xs text-gray-400">Upload a .docx file to see the print-ready preview here</p>
+      </div>
+    </div>
+    <div id="previewToolbar" class="hidden no-print max-w-4xl mx-auto mb-3 flex items-center justify-end gap-2 flex-wrap">
+      <div id="formatToolbar" class="format-toolbar hidden">
+        <div class="fmt-btn" data-cmd="bold" title="बोल्ड / Bold (Ctrl+B)" style="font-weight:800;">B</div>
+        <div class="fmt-btn" data-cmd="italic" title="इटैलिक / Italic (Ctrl+I)" style="font-style:italic;">I</div>
+        <div class="fmt-btn" data-cmd="underline" title="रेखांकित / Underline (Ctrl+U)" style="text-decoration:underline;">U</div>
+        <div class="fmt-sep"></div>
+        <div class="fmt-btn" data-cmd="justifyLeft" title="बाएं संरेखित / Align Left">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M1 2h14M1 6h9M1 10h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="fmt-btn" data-cmd="justifyCenter" title="केंद्र में / Align Center">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M1 2h14M3.5 6h9M1 10h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="fmt-btn" data-cmd="justifyRight" title="दाएं संरेखित / Align Right">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M1 2h14M6 6h9M1 10h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="fmt-btn" data-cmd="justifyFull" title="जस्टिफाई / Justify">
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M1 2h14M1 6h14M1 10h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="fmt-sep"></div>
+        <div class="fmt-btn" data-cmd="undo" title="पूर्ववत करें / Undo (Ctrl+Z)">↶</div>
+        <div class="fmt-btn" data-cmd="redo" title="फिर से करें / Redo (Ctrl+Y)">↷</div>
+      </div>
+      <div class="zoom-controls">
+        <div id="zoomOutBtn" class="zoom-btn" title="ज़ूम आउट / Zoom Out">−</div>
+        <div id="zoomReadout" class="zoom-readout">100%</div>
+        <div id="zoomInBtn" class="zoom-btn" title="ज़ूम इन / Zoom In">+</div>
+        <div id="zoomResetBtn" class="zoom-btn" style="width:auto; padding:0 8px; font-size:11px;" title="डिफ़ॉल्ट ज़ूम (45%) / Reset to Default (45%)">⟲</div>
+      </div>
+      <button id="editToggleBtn" class="btn btn-secondary" style="padding:8px 14px; font-size:12px;">✏️ संपादित करें / Edit Content</button>
+      <button id="fullSizeToggle" class="btn btn-secondary" style="padding:8px 14px; font-size:12px;">🔍 पूर्ण आकार / Full Size</button>
+    </div>
+    <div id="legacyFontBanner" class="hidden max-w-3xl mx-auto mb-3"></div>
+    <div id="previewContainer" class="hidden flex flex-col items-center gap-2"></div>
+  </div>
+</div>
+
+<!-- Print Checklist Modal -->
+<div id="checklistModal" class="modal-overlay no-print hidden">
+  <div class="modal-box text-sm">
+    <div class="flex items-center gap-2 mb-4">
+      <div class="panel-section-icon" style="width:30px;height:30px;font-size:15px;">🖨️</div>
+      <h2 class="font-bold text-[15px]">प्रिंट से पहले जांचें / Pre-Print Checklist</h2>
+    </div>
+    <div class="space-y-2.5 mb-4">
+      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1"><span id="checklistPaperLine1">प्रिंटर में Legal (8.5 × 14") स्टाम्प पेपर लगा है / Legal stamp paper loaded in printer</span></label>
+      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1"><span id="checklistPaperLine2">Paper Size: Legal (8.5 × 14 in) चुना है / Selected Legal paper size</span></label>
+      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1">Margins: None (कोई नहीं) सेट है / Margins set to None</label>
+      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1">Scale: 100% सेट है / Scale at 100%</label>
+      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1">Headers & Footers बंद हैं / Headers & Footers are OFF</label>
+    </div>
+    <div class="flex justify-end gap-2">
+      <button id="checklistBackBtn" class="btn btn-secondary">❌ वापस जाएं / Go Back</button>
+      <button id="checklistPrintBtn" class="btn btn-primary">🖨️ प्रिंट करें / Print Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help Modal -->
+<div id="helpModal" class="modal-overlay no-print hidden">
+  <div class="modal-box text-sm space-y-2">
+    <div class="flex items-center gap-2 mb-2">
+      <div class="panel-section-icon" style="width:30px;height:30px;font-size:15px;">ℹ️</div>
+      <h2 class="font-bold text-[15px]">सहायता / Help</h2>
+    </div>
+    <p>1. .docx फ़ाइल अपलोड करें (Upload a .docx file).</p>
+    <p>2. अपने राज्य के अनुसार स्टाम्प पेपर प्रकार चुनें, या मैन्युअल रूप से हाशिया समायोजित करें।</p>
+    <p>3. टेस्ट पेज प्रिंट करें और सत्यापित करें कि रेखा स्टाम्प शीर्षक के नीचे संरेखित है।</p>
+    <p>4. "दस्तावेज़ प्रिंट करें" दबाएं और चेकलिस्ट पूरी करें।</p>
+    <p class="text-gray-500 text-xs pt-2">Upload a .docx, pick your state's stamp paper preset (or set margins manually), print a calibration test page to verify alignment, then print the document.</p>
+    <div class="flex justify-end pt-2">
+      <button id="helpCloseBtn" class="btn btn-primary">बंद करें / Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const state = {
+    page1Top: 105, page2Top: 20, leftMargin: 31.75, rightMargin: 19.05, bottomMargin: 20,
+    fontSize: 14, lineHeight: 1.8, paperSize: 'legal',
+    htmlContent: null, fileName: null,
+    fileQueue: [], queueIndex: -1, fullSize: false, editMode: false
+  };
+
+  const PAPER_SIZES = {
+    legal: { wMM: 215.9, hMM: 355.6, cssSize: '8.5in 14in' },
+    a4:    { wMM: 210,   hMM: 297,   cssSize: '210mm 297mm' }
+  };
+  function currentPaper(){ return PAPER_SIZES[state.paperSize] || PAPER_SIZES.legal; }
+  function pageWidthPx(){ return currentPaper().wMM * 96 / 25.4; }
+  function pageHeightPx(){ return currentPaper().hMM * 96 / 25.4; }
+
+  const DEFAULT_SCALE = 0.45;
+  let scale = DEFAULT_SCALE;
+
+  // Keeps the CSS page box (--page-w/--page-h), the live @page print rule, and
+  // the print-settings hint text all in sync with the selected paper size.
+  function applyPaperSizeCSS(){
+    const p = currentPaper();
+    document.documentElement.style.setProperty('--page-w', p.wMM + 'mm');
+    document.documentElement.style.setProperty('--page-h', p.hMM + 'mm');
+    for (const sheet of document.styleSheets) {
+      try {
+        for (const rule of sheet.cssRules) {
+          if (rule instanceof CSSPageRule) rule.style.size = p.cssSize;
+        }
+      } catch (e) { /* cross-origin/inaccessible stylesheet — skip, keep checking the rest */ }
+    }
+    const label = document.getElementById('printSettingsPaperSize');
+    if (label) label.textContent = state.paperSize === 'a4' ? 'A4 (210 × 297 mm)' : 'Legal (8.5 × 14 in)';
+  }
+
+  function updateZoomReadout(){
+    document.getElementById('zoomReadout').textContent = Math.round(scale * 100) + '%';
+  }
+  const SETTINGS_KEY = 'hindi_registry_tool_settings';
+  const SIGNATURE_KEYWORDS = ['हस्ताक्षर','साक्षी','गवाह','विक्रेता','क्रेता','पक्षकार','अंगूठा','निशानी'];
+
+  // ---------- Settings persistence ----------
+  function saveSettings(){
+    try {
+      const s = {
+        page1Top: state.page1Top, page2Top: state.page2Top, leftMargin: state.leftMargin,
+        rightMargin: state.rightMargin, bottomMargin: state.bottomMargin,
+        fontSize: state.fontSize, lineHeight: state.lineHeight,
+        statePreset: document.getElementById('statePreset').value,
+        fontEncoding: document.getElementById('fontEncoding').value,
+        paperSize: state.paperSize,
+        darkMode: document.documentElement.classList.contains('dark')
+      };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    } catch (e) { /* localStorage unavailable — ignore */ }
+  }
+
+  function loadSettings(){
+    try {
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      ['page1Top','page2Top','leftMargin','rightMargin','bottomMargin','fontSize','lineHeight'].forEach(k => {
+        if (typeof s[k] === 'number') {
+          state[k] = s[k];
+          const el = document.getElementById(k);
+          if (el) el.value = s[k];
+        }
+      });
+      if (s.statePreset) document.getElementById('statePreset').value = s.statePreset;
+      if (s.fontEncoding) document.getElementById('fontEncoding').value = s.fontEncoding;
+      if (s.paperSize && PAPER_SIZES[s.paperSize]) {
+        state.paperSize = s.paperSize;
+        document.getElementById('paperSize').value = s.paperSize;
+      }
+      if (s.darkMode) {
+        document.documentElement.classList.add('dark');
+        document.getElementById('darkModeToggle').textContent = '☀️';
+      }
+    } catch (e) { /* corrupt/blocked storage — ignore, defaults stand */ }
+  }
+
+  function mm(v){ return v + 'mm'; }
+
+  function applyCSSVars(){
+    const r = document.documentElement.style;
+    r.setProperty('--page1-top', mm(state.page1Top));
+    r.setProperty('--page2-top', mm(state.page2Top));
+    r.setProperty('--left-margin', mm(state.leftMargin));
+    r.setProperty('--right-margin', mm(state.rightMargin));
+    r.setProperty('--bottom-margin', mm(state.bottomMargin));
+    r.setProperty('--doc-font-size', state.fontSize + 'pt');
+    r.setProperty('--doc-line-height', state.lineHeight);
+  }
+
+  function updateSliderFill(id){
+    const el = document.getElementById(id);
+    const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+    el.style.setProperty('--val', pct + '%');
+  }
+
+  function updateReadouts(){
+    document.getElementById('val-page1Top').textContent = state.page1Top + 'mm';
+    document.getElementById('val-page2Top').textContent = state.page2Top + 'mm';
+    document.getElementById('val-leftMargin').textContent = state.leftMargin + 'mm';
+    document.getElementById('val-rightMargin').textContent = state.rightMargin + 'mm';
+    document.getElementById('val-bottomMargin').textContent = state.bottomMargin + 'mm';
+    document.getElementById('val-fontSize').textContent = state.fontSize + 'pt';
+    document.getElementById('val-lineHeight').textContent = state.lineHeight;
+    ['page1Top','page2Top','leftMargin','rightMargin','bottomMargin','fontSize','lineHeight'].forEach(updateSliderFill);
+  }
+
+  function showStatus(msg, type){
+    const area = document.getElementById('statusArea');
+    const colors = {
+      error: 'bg-red-50 border-red-300 text-red-800',
+      warn: 'bg-yellow-50 border-yellow-300 text-yellow-800',
+      info: 'bg-blue-50 border-blue-300 text-blue-800',
+      success: 'bg-green-50 border-green-300 text-green-800'
+    };
+    const div = document.createElement('div');
+    div.className = 'border rounded p-2 text-xs ' + (colors[type] || colors.info);
+    div.innerHTML = msg;
+    area.prepend(div);
+    // cap to 5 messages
+    while (area.children.length > 5) area.removeChild(area.lastChild);
+  }
+
+  function clearStatus(){ document.getElementById('statusArea').innerHTML = ''; }
+
+  // ---------- Sanitization ----------
+  const ALLOWED_TAGS = new Set(['P','STRONG','B','EM','I','U','TABLE','TR','TD','TH','THEAD','TBODY','UL','OL','LI','BR','H2','H3','H4']);
+
+  function sanitizeHTML(html){
+    const container = document.createElement('div');
+    container.innerHTML = html;
+
+    // Convert h1 -> h2
+    container.querySelectorAll('h1').forEach(h => {
+      const h2 = document.createElement('h2');
+      h2.innerHTML = h.innerHTML;
+      h.replaceWith(h2);
+    });
+
+    // Strip disallowed tags (unwrap), strip style/class from all
+    function walk(node){
+      [...node.childNodes].forEach(child => {
+        if (child.nodeType === 1) {
+          child.removeAttribute('style');
+          child.removeAttribute('class');
+          // remove empty span wrappers by unwrapping any span
+          if (child.tagName === 'SPAN') {
+            walk(child);
+            while (child.firstChild) child.parentNode.insertBefore(child.firstChild, child);
+            child.remove();
+            return;
+          }
+          if (!ALLOWED_TAGS.has(child.tagName)) {
+            walk(child);
+            while (child.firstChild) child.parentNode.insertBefore(child.firstChild, child);
+            child.remove();
+            return;
+          }
+          walk(child);
+        }
+      });
+    }
+    walk(container);
+    return container.innerHTML;
+  }
+
+  // ---------- Kruti Dev Legacy Font Conversion Engine ----------
+  // Ported from a well-tested, widely-used Kruti Dev 010 -> Unicode converter
+  // (TGNYC/Kriti-Dev-to-Unicode). Longest/most-specific sequences are listed
+  // first in KD_ARRAY_ONE and matched in that order (mirrors the reference
+  // implementation). Plain ASCII digits are intentionally left untouched by
+  // this table, so page/clause numbers stay as 1, 2, 3 rather than becoming
+  // Devanagari numerals.
+  //
+  // The reference table also remaps ( ) - / . : to rare Devanagari conjuncts
+  // (they're overloaded keys on the real Kruti Dev keyboard). Indian legal/
+  // revenue documents are full of survey numbers and dates that use exactly
+  // these characters as plain punctuation (e.g. "106/115", "(6-17)",
+  // "01-12-2025"). Those six are pulled out of this bulk table and handled by
+  // applyAmbiguousPunctuation() below instead, which only converts them to
+  // the Devanagari glyph when they're NOT touching a digit — so citations stay
+  // literal but mid-word uses (e.g. ":ह" -> "रूह") still convert correctly.
+  // ';' is kept in the bulk table since on Kruti Dev it's the primary key for
+  // the consonant "य" (ya), not decorative punctuation.
+  const KD_ARRAY_ONE = [
+    "ñ", "Q+Z", "sas", "aa", ")Z", "ZZ", "‘", "’", "“", "”", "å", "ƒ", "„", "…", "†", "‡", "ˆ", "‰", "Š", "‹", "¶+", 
+    "d+", "[+k", "[+", "x+", "T+", "t+", "M+", "<+", "Q+", ";+", "j+", "u+", "Ùk", "Ù", "ä", "–", "—", "é", "™", 
+    "=kk", "f=k", "à", "á", "â", "ã", "ºz", "º", "í", "{k", "{", "=", "«", "Nî", "Vî", "Bî", "Mî", "<î", "|", "K", 
+    "}", "J", "Vª", "Mª", "<ªª", "Nª", "Ø", "Ý", "nzZ", "æ", "ç", "Á", "xz", "#", "v‚", "vks", "vkS", "vk", "v", "b±", 
+    "Ã", "bZ", "b", "m", "Å", ",s", ",", "_", "ô", "d", "Dk", "D", "[k", "[", "x", "Xk", "X", "Ä", "?k", "?", "³", 
+    "pkS", "p", "Pk", "P", "N", "t", "Tk", "T", ">", "÷", "¥", "ê", "ë", "V", "B", "ì", "ï", "M+", "<+", "M", "<", 
+    ".k", "r", "Rk", "R", "Fk", "F", "n", "/k", "èk", "Ë", "è", "u", "Uk", "U", "i", "Ik", "I", "Q", "¶", "c", "Ck", 
+    "C", "Hk", "H", "e", "Ek", "E", ";", "¸", "j", "y", "Yk", "Y", "G", "o", "Ok", "O", "'k", "'", "\"k", "\"", "l", 
+    "Lk", "L", "g", "È", "z", "Ì", "Í", "Î", "Ï", "Ñ", "Ò", "Ó", "Ô", "Ö", "Ø", "Ù", "Ük", "Ü", "‚", "ks", "kS", "k", 
+    "h", "q", "w", "`", "s", "S", "a", "¡", "%", "W", "•", "·", "∙", "·", "~j", "~", "\\", "+", " ः", "^", "*", "Þ", 
+    "ß", "¼", "½", "¿", "À", "¾", "A", "&", "&", "Œ", "]", "~ ", "@" 
+  ];
+  const KD_ARRAY_TWO = [
+    "॰", "QZ+", "sa", "a", "र्द्ध", "Z", "\"", "\"", "'", "'", "०", "१", "२", "३", "४", "५", "६", "७", "८", "९", "फ़्", 
+    "क़", "ख़", "ख़्", "ग़", "ज़्", "ज़", "ड़", "ढ़", "फ़", "य़", "ऱ", "ऩ", "त्त", "त्त्", "क्त", "दृ", "कृ", "न्न", "न्न्", 
+    "=k", "f=", "ह्न", "ह्य", "हृ", "ह्म", "ह्र", "ह्", "द्द", "क्ष", "क्ष्", "त्र", "त्र्", "छ्य", "ट्य", "ठ्य", 
+    "ड्य", "ढ्य", "द्य", "ज्ञ", "द्व", "श्र", "ट्र", "ड्र", "ढ्र", "छ्र", "क्र", "फ्र", "र्द्र", "द्र", "प्र", "प्र", 
+    "ग्र", "रु", "ऑ", "ओ", "औ", "आ", "अ", "ईं", "ई", "ई", "इ", "उ", "ऊ", "ऐ", "ए", "ऋ", "क्क", "क", "क", "क्", "ख", 
+    "ख्", "ग", "ग", "ग्", "घ", "घ", "घ्", "ङ", "चै", "च", "च", "च्", "छ", "ज", "ज", "ज्", "झ", "झ्", "ञ", "ट्ट", 
+    "ट्ठ", "ट", "ठ", "ड्ड", "ड्ढ", "ड़", "ढ़", "ड", "ढ", "ण", "त", "त", "त्", "थ", "थ्", "द", "ध", "ध", "ध्", "ध्", 
+    "न", "न", "न्", "प", "प", "प्", "फ", "फ्", "ब", "ब", "ब्", "भ", "भ्", "म", "म", "म्", "य", "य्", "र", "ल", "ल", 
+    "ल्", "ळ", "व", "व", "व्", "श", "श्", "ष", "ष्", "स", "स", "स्", "ह", "ीं", "्र", "द्द", "ट्ट", "ट्ठ", "ड्ड", 
+    "कृ", "भ", "्य", "ड्ढ", "झ्", "क्र", "त्त्", "श", "श्", "ॉ", "ो", "ौ", "ा", "ी", "ु", "ू", "ृ", "े", "ै", "ं", 
+    "ँ", "ः", "ॅ", "ऽ", "ऽ", "ऽ", "ऽ", "्र", "्", "?", "़", ":", "‘", "’", "“", "”", "(", ")", "{", "}", "=", "।", 
+    "-", "µ", "॰", ",", "् ", "/" 
+  ];
+
+  const KD_TEST_STRINGS = ['Hkkjr','jkT;','U;kfn','laifRr','iath','ljdkj','ftyk','rglhy','izkFkZuk','vkosnu'];
+
+  // ( ) - / . : are ambiguous on the real Kruti Dev keyboard: sometimes literal
+  // punctuation (survey numbers, dates), sometimes the primary key for a
+  // Devanagari glyph. Only apply the glyph mapping when NOT touching a digit —
+  // that reliably tells apart "106/115" (leave alone) from a mid-word use like
+  // ":ह" -> "रूह" (a common legal-deed phrase meaning "by virtue of").
+  const AMBIGUOUS_PUNCT = [[':', 'रू'], ['.', 'ण्'], [')', 'द्ध'], ['/', 'ध्'], ['(', ';'], ['-', '.']];
+  function applyAmbiguousPunctuation(text){
+    AMBIGUOUS_PUNCT.forEach(([from, to]) => {
+      const escaped = from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      text = text.replace(new RegExp('(?<![0-9])' + escaped + '(?![0-9])', 'g'), to);
+    });
+    return text;
+  }
+
+  function krutiDevReplaceSymbols(input){
+    let s = input;
+    for (let i = 0; i < KD_ARRAY_ONE.length; i++) {
+      if (s.indexOf(KD_ARRAY_ONE[i]) !== -1) {
+        s = s.split(KD_ARRAY_ONE[i]).join(KD_ARRAY_TWO[i]);
+      }
+    }
+    s = applyAmbiguousPunctuation(s);
+
+    // Special multi-byte glyphs (reph+anusvar, embedded i-matra forms, etc.)
+    s = s.split('±').join('Zं');
+    s = s.split('Æ').join('र्f');
+
+    // 'f' represents the ि matra but is typed BEFORE its consonant; move it
+    // to just after the following character.
+    let posF = s.indexOf('f');
+    while (posF !== -1) {
+      const nextChar = s.charAt(posF + 1);
+      s = s.replace('f' + nextChar, nextChar + 'ि');
+      posF = s.indexOf('f');
+    }
+
+    // 'fa' -> 'िं' (matra + anusvar combo typed before the consonant)
+    s = s.split('Ç').join('fa');
+    s = s.split('É').join('र्fa');
+    let posFa = s.indexOf('fa');
+    while (posFa !== -1) {
+      const nextChar = s.charAt(posFa + 2);
+      s = s.replace('fa' + nextChar, nextChar + 'िं');
+      posFa = s.indexOf('fa');
+    }
+
+    s = s.split('Ê').join('ीZ');
+
+    // Fix 'ि्' produced by the reorder above landing on a half-consonant.
+    let posWrongEe = s.indexOf('ि्');
+    while (posWrongEe !== -1) {
+      const consonantAfter = s.charAt(posWrongEe + 2);
+      s = s.replace('ि्' + consonantAfter, '्' + consonantAfter + 'ि');
+      posWrongEe = s.indexOf('ि्');
+    }
+
+    // 'Z' represents reph (र्) but is typed AFTER the consonant cluster it
+    // attaches to; walk left across any matras to find the cluster start,
+    // then move र् in front of it.
+    const matras = 'अ आ इ ई उ ऊ ए ऐ ओ औ ा ि ी ु ू ृ े ै ो ौ ं : ँ ॅ';
+    let posZ = s.indexOf('Z');
+    while (posZ > 0) {
+      let start = posZ - 1;
+      while (start >= 0 && matras.indexOf(s.charAt(start)) !== -1) start--;
+      const clusterStart = start < 0 ? 0 : start; // start now points AT the consonant (inclusive)
+      const cluster = s.substring(clusterStart, posZ);
+      s = s.replace(cluster + 'Z', 'र्' + cluster);
+      posZ = s.indexOf('Z');
+    }
+
+    return s;
+  }
+
+  function convertLegacyText(text, mapType){
+    if (!text) return text;
+    // Devlys 010 shares the vast majority of its glyph layout with Kruti Dev
+    // 010; until a separately-verified Devlys table is available, both use
+    // this Kruti Dev conversion.
+    return krutiDevReplaceSymbols(text);
+  }
+
+  // Applies legacy conversion to TEXT NODES ONLY inside an HTML string, preserving tags.
+  function convertLegacyHTML(html, mapType, callback){
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null);
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) textNodes.push(node);
+
+    let idx = 0;
+    function processChunk(){
+      const start = performance.now();
+      while (idx < textNodes.length && performance.now() - start < 12) {
+        textNodes[idx].nodeValue = convertLegacyText(textNodes[idx].nodeValue, mapType);
+        idx++;
+      }
+      if (idx < textNodes.length) {
+        setTimeout(processChunk, 0);
+      } else {
+        callback(container.innerHTML);
+      }
+    }
+    processChunk();
+  }
+
+  function detectLegacyFont(html){
+    const plainText = html.replace(/<[^>]+>/g, '');
+    const devanagariChars = (plainText.match(/[ऀ-ॿ]/g) || []).length;
+    const latinChars = (plainText.match(/[a-zA-Z]/g) || []).length;
+    const totalAlpha = devanagariChars + latinChars;
+    if (totalAlpha === 0) return { detected: false };
+    const latinRatio = latinChars / totalAlpha;
+    if (latinRatio > 0.7 && latinChars > 50) {
+      const patternMatches = KD_TEST_STRINGS.filter(p => plainText.indexOf(p) !== -1).length;
+      return {
+        detected: true,
+        confidence: patternMatches >= 2 ? 'high' : 'medium',
+        latinRatio: latinRatio,
+        patternMatches: patternMatches
+      };
+    }
+    return { detected: false };
+  }
+
+  function showLegacyBanner(detection){
+    const banner = document.getElementById('legacyFontBanner');
+    banner.classList.remove('hidden');
+    if (detection.confidence === 'high') {
+      banner.innerHTML = `
+        <div class="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-3 text-sm">
+          <p class="font-bold text-yellow-900 mb-1">⚠️ लीगेसी फ़ॉण्ट पहचाना गया / Legacy Font Detected</p>
+          <p class="text-yellow-800 mb-2">यह दस्तावेज़ Kruti Dev फ़ॉण्ट में टाइप किया गया है। स्वचालित रूप से यूनिकोड हिंदी में परिवर्तित किया गया है।<br>
+          This document was typed in Kruti Dev font and has been auto-converted to Unicode Hindi.</p>
+          <div class="flex flex-wrap gap-2">
+            <button id="acceptConversionBtn" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-medium">✅ रूपांतरण स्वीकार करें / Accept Conversion</button>
+            <button id="keepOriginalBtn" class="bg-gray-300 text-gray-800 px-3 py-1 rounded text-xs font-medium">❌ मूल रखें / Keep Original</button>
+            <button id="retryDevlysBtn" class="bg-blue-100 text-blue-800 px-3 py-1 rounded text-xs font-medium">🔄 पुनः प्रयास / Retry with Devlys mapping</button>
+          </div>
+        </div>`;
+    } else {
+      banner.innerHTML = `
+        <div class="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 text-sm">
+          <p class="font-bold text-orange-900 mb-1">⚠️ संभावित लीगेसी फ़ॉण्ट / Possible Legacy Font</p>
+          <p class="text-orange-800 mb-2">यह दस्तावेज़ Kruti Dev फ़ॉण्ट में हो सकता है। कृपया जाँचें कि परिवर्तित पाठ सही है।<br>
+          This document may use Kruti Dev font. Please verify the converted text is correct.</p>
+          <div class="flex flex-wrap gap-2">
+            <button id="acceptConversionBtn" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-medium">✅ रूपांतरित पाठ दिखाएं / Show Converted</button>
+            <button id="keepOriginalBtn" class="bg-gray-300 text-gray-800 px-3 py-1 rounded text-xs font-medium">📄 मूल पाठ दिखाएं / Show Original</button>
+          </div>
+        </div>`;
+    }
+    document.getElementById('acceptConversionBtn').addEventListener('click', () => {
+      state.htmlContent = enhanceTables(state.convertedHtml);
+      renderPreview();
+    });
+    document.getElementById('keepOriginalBtn').addEventListener('click', () => {
+      state.htmlContent = enhanceTables(state.rawHtml);
+      renderPreview();
+    });
+    const retryBtn = document.getElementById('retryDevlysBtn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        convertLegacyHTML(state.rawHtml, 'devlys', converted => {
+          state.convertedHtml = converted;
+          state.htmlContent = enhanceTables(converted);
+          renderPreview();
+          showStatus('Devlys 010 मैपिंग से पुनः रूपांतरित / Re-converted using Devlys 010 mapping', 'info');
+        });
+      });
+    }
+    banner.classList.add('hidden'); banner.classList.remove('hidden');
+  }
+
+  function hideLegacyBanner(){
+    document.getElementById('legacyFontBanner').classList.add('hidden');
+    document.getElementById('legacyFontBanner').innerHTML = '';
+  }
+
+  // Process the raw sanitized HTML through the font-encoding pipeline
+  function processFontEncoding(rawHtml, callback){
+    state.rawHtml = rawHtml;
+    state.convertedHtml = null;
+    hideLegacyBanner();
+    const encodingMode = document.getElementById('fontEncoding').value;
+    const finish = () => { state.htmlContent = enhanceTables(state.htmlContent); callback(); };
+
+    if (encodingMode === 'none') {
+      state.htmlContent = rawHtml;
+      finish();
+      return;
+    }
+    if (encodingMode === 'kruti' || encodingMode === 'devlys') {
+      convertLegacyHTML(rawHtml, encodingMode, converted => {
+        state.convertedHtml = converted;
+        state.htmlContent = converted;
+        showStatus('Kruti Dev/Devlys मैपिंग लागू की गई / Legacy mapping applied (forced)', 'info');
+        finish();
+      });
+      return;
+    }
+    // auto-detect
+    const detection = detectLegacyFont(rawHtml);
+    if (detection.detected) {
+      convertLegacyHTML(rawHtml, 'kruti', converted => {
+        state.convertedHtml = converted;
+        state.htmlContent = converted;
+        showLegacyBanner(detection);
+        finish();
+      });
+    } else {
+      state.htmlContent = rawHtml;
+      finish();
+    }
+  }
+
+  document.getElementById('fontEncoding').addEventListener('change', () => {
+    if (!state.rawHtml) return;
+    processFontEncoding(state.rawHtml, renderPreview);
+  });
+
+  // Live test panel
+  const testPanelToggle = document.getElementById('testPanelToggle');
+  testPanelToggle.addEventListener('click', () => {
+    const body = document.getElementById('testPanelBody');
+    const arrow = document.getElementById('testPanelArrow');
+    body.classList.toggle('hidden');
+    arrow.textContent = body.classList.contains('hidden') ? '▶' : '▼';
+  });
+  document.getElementById('krutiTestInput').addEventListener('input', e => {
+    document.getElementById('krutiTestOutput').textContent = convertLegacyText(e.target.value, 'kruti');
+  });
+
+  // ---------- Table enhancement: wide-table flagging + header repetition ----------
+  // Fixes malformed Devanagari combining-mark sequences that can show up in
+  // source documents regardless of whether Kruti Dev conversion ran (e.g. from
+  // an earlier lossy font conversion). Runs on every content path since this
+  // is called from enhanceTables below.
+  // A dependent Devanagari mark (matra, nukta, anusvar/chandrabindu/visarga)
+  // that isn't sitting on a valid base renders as a broken dotted circle or
+  // ends up in the wrong position — visible as odd gaps or stray marks. These
+  // three passes clean that up without touching already-correct text (every
+  // one is a no-op on text where the marks are already properly placed).
+  const DEVA_BASE = /[ऄ-हक़-ॡॲ-ॿऽॐ]/;   // consonants + independent vowels
+  const DEVA_MATRA = /[ा-ौॎॏॕ-ॗॢॣ]/;    // dependent vowel signs
+  const DEVA_ANUSVAR = /[ऀ-ः]/;          // candrabindu, anusvara, visarga
+  const DEVA_NUKTA = '़';
+
+  function dropOrphanedNukta(text){
+    let out = '';
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === DEVA_NUKTA && !DEVA_BASE.test(out[out.length - 1] || '')) continue;
+      out += ch;
+    }
+    return out;
+  }
+
+  function dropOrphanedMarks(text){
+    let out = '';
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      const prev = out[out.length - 1] || '';
+      if (DEVA_MATRA.test(ch)) {
+        if (!DEVA_BASE.test(prev)) continue; // matra must sit directly on a consonant/vowel
+      } else if (DEVA_ANUSVAR.test(ch)) {
+        // anusvar/chandrabindu/visarga may follow a bare consonant OR a matra (e.g. "हैं")
+        if (!DEVA_BASE.test(prev) && !DEVA_MATRA.test(prev)) continue;
+      }
+      out += ch;
+    }
+    return out;
+  }
+
+  function normalizeDevanagariText(text){
+    if (!text) return text;
+    // Orphaned nukta must be cleared FIRST — it often sits between an anusvar
+    // and the matra it needs to swap with next, blocking that match.
+    text = dropOrphanedNukta(text);
+    // A vowel matra must come BEFORE anusvar/chandrabindu/visarga in Unicode
+    // order (they visually combine either way, but wrong order renders as two
+    // separate marks with an odd gap between them instead of one glyph).
+    text = text.replace(/([ंँः])([ािीुूृेैोौ])/g, '$2$1');
+    // Anything still orphaned at this point (stray marks with no real word
+    // to attach to) gets dropped rather than rendering as a broken glyph.
+    return dropOrphanedMarks(text);
+  }
+
+  function enhanceTables(html){
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    let wideCount = 0;
+    container.querySelectorAll('table').forEach(table => {
+      const firstRow = table.querySelector('tr');
+      const colCount = firstRow ? firstRow.children.length : 0;
+      if (colCount > 6) {
+        table.classList.add('wide-table');
+        wideCount++;
+      }
+      if (!table.querySelector('thead') && firstRow) {
+        const thead = document.createElement('thead');
+        thead.appendChild(firstRow);
+        table.insertBefore(thead, table.firstChild);
+      }
+    });
+    state.wideTableCount = wideCount;
+    state.tableCount = container.querySelectorAll('table').length;
+
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      node.nodeValue = normalizeDevanagariText(node.nodeValue);
+    }
+
+    return container.innerHTML;
+  }
+
+  // ---------- Document stats ----------
+  function updateStats(pageCount){
+    if (!state.htmlContent) return;
+    const plain = state.htmlContent.replace(/<[^>]+>/g, ' ');
+    const words = plain.trim().split(/\s+/).filter(Boolean).length;
+    const chars = plain.replace(/\s+/g, '').length;
+    const encodingMode = document.getElementById('fontEncoding').value;
+    const fontType = state.convertedHtml ? 'Kruti Dev/Devlys (converted)' : 'Unicode';
+    document.getElementById('statsPanelBody').innerHTML = `
+      <p>कुल शब्द / Total Words: <strong>${words}</strong></p>
+      <p>कुल अक्षर / Total Characters: <strong>${chars}</strong></p>
+      <p>अनुमानित पृष्ठ / Estimated Pages: <strong>${pageCount}</strong></p>
+      <p>तालिकाएं / Tables: <strong>${state.tableCount || 0}</strong></p>
+      <p>फ़ॉण्ट प्रकार / Font Type: <strong>${fontType}</strong></p>
+    `;
+    if (chars > 500000) {
+      showStatus('⚠️ बड़ा दस्तावेज़ — प्रिंट करते समय ब्राउज़र धीमा हो सकता है / Large document — browser may be slow during printing', 'warn');
+    }
+    if (state.wideTableCount > 0) {
+      showStatus('⚠️ चौड़ी तालिका — छोटे फ़ॉण्ट में / Wide table — reduced font size (' + state.wideTableCount + ')', 'info');
+    }
+  }
+
+  // ---------- Shared pagination logic ----------
+  function containsSignatureKeyword(htmlFragment){
+    return SIGNATURE_KEYWORDS.some(k => htmlFragment.indexOf(k) !== -1);
+  }
+
+  // Extra breathing room (in mm) between the stamp-clearance boundary and where
+  // the actual text starts on page 1 — a fixed number of blank text-lines,
+  // computed from the current font size/line-height so it scales with typography.
+  const STAMP_GAP_LINES = 2;
+  function stampGapMM(fontSizePt, lineHeight){
+    const PT_TO_MM = 25.4 / 72;
+    return STAMP_GAP_LINES * fontSizePt * PT_TO_MM * lineHeight;
+  }
+
+  function paginateContent(htmlContent, opts){
+    const pageWidthMM = opts.pageWmm;
+    const pageHeightMM = opts.pageHmm;
+    const contentWidthMM = pageWidthMM - opts.leftMargin - opts.rightMargin;
+
+    const measurer = document.createElement('div');
+    measurer.style.position = 'absolute';
+    measurer.style.visibility = 'hidden';
+    measurer.style.left = '-9999px';
+    measurer.style.width = contentWidthMM + 'mm';
+    measurer.className = 'registry-content';
+    measurer.innerHTML = htmlContent;
+    document.body.appendChild(measurer);
+
+    const pxPerMM = measurer.getBoundingClientRect().width / contentWidthMM;
+    // Small safety cushion: the physical @page boundary in real printing is a hard
+    // limit, but this pagination is computed from a hidden measurement pass whose
+    // font-metric rounding can differ by a hair from the final print layout. Packing
+    // content flush to the page height risks a few pixels of real overflow spilling
+    // onto an extra physical sheet — invisible on screen (the page div just grows),
+    // but very visible on paper. Leaving a small buffer keeps every computed page a
+    // guaranteed fit.
+    const PAGE_SAFETY_BUFFER_MM = 3;
+    const page1GapMM = stampGapMM(opts.fontSize, opts.lineHeight);
+    const page1AvailPx = Math.max(0, pageHeightMM - opts.page1Top - opts.bottomMargin - PAGE_SAFETY_BUFFER_MM - page1GapMM) * pxPerMM;
+    const pageNAvailPx = Math.max(0, pageHeightMM - opts.page2Top - opts.bottomMargin - PAGE_SAFETY_BUFFER_MM) * pxPerMM;
+    const sigMinSpacePx = 100 * pxPerMM; // signature block needs >=100mm of room
+
+    const children = [...measurer.children];
+    const pages = [[]];
+    let currentHeight = 0;
+    let avail = page1AvailPx;
+    let sigBlockStarted = false;
+
+    function newPage(){
+      pages.push([]);
+      currentHeight = 0;
+      avail = pageNAvailPx;
+    }
+
+    // Splits a large table row-by-row so the remaining space on the current
+    // page gets used instead of pushing the whole table to the next page.
+    // The header row (promoted to <thead> by enhanceTables) repeats on each chunk.
+    function splitTable(table){
+      const thead = table.querySelector(':scope > thead');
+      const rows = [...table.rows].filter(r => !thead || !thead.contains(r));
+      const theadHTML = thead ? thead.outerHTML : '';
+      const theadHeight = thead ? thead.getBoundingClientRect().height : 0;
+      const tableClass = table.className ? ' class="' + table.className + '"' : '';
+      let i = 0;
+      while (i < rows.length) {
+        if (pages[pages.length-1].length > 0 && (avail - currentHeight) < theadHeight + rows[i].getBoundingClientRect().height) {
+          newPage();
+        }
+        const roomLeft = avail - currentHeight;
+        let used = theadHeight;
+        const chunkRows = [];
+        while (i < rows.length) {
+          const rh = rows[i].getBoundingClientRect().height;
+          if (chunkRows.length > 0 && used + rh > roomLeft) break;
+          chunkRows.push(rows[i].outerHTML);
+          used += rh;
+          i++;
+        }
+        pages[pages.length-1].push('<table' + tableClass + '>' + theadHTML + '<tbody>' + chunkRows.join('') + '</tbody></table>');
+        currentHeight += used;
+        if (i < rows.length) newPage();
+      }
+    }
+
+    // Splits a paragraph by LINE so the remaining space on the current page
+    // gets used instead of pushing the whole (often very long) paragraph to
+    // the next page. Uses the native Range API so bold/italic/underline
+    // spans inside the paragraph stay structurally correct after the split.
+    function splitParagraphAtHeight(p, budgetPx){
+      const textNodes = [];
+      const walker = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+      let n;
+      while ((n = walker.nextNode())) textNodes.push(n);
+      const totalLen = textNodes.reduce((sum, t) => sum + t.nodeValue.length, 0);
+      if (totalLen === 0) return null;
+
+      function offsetToNode(globalOffset){
+        let remaining = globalOffset;
+        for (const t of textNodes) {
+          if (remaining <= t.nodeValue.length) return { node: t, offset: remaining };
+          remaining -= t.nodeValue.length;
+        }
+        const last = textNodes[textNodes.length - 1];
+        return { node: last, offset: last.nodeValue.length };
+      }
+
+      function heightUpTo(globalOffset){
+        if (globalOffset <= 0) return 0;
+        const { node, offset } = offsetToNode(globalOffset);
+        const range = document.createRange();
+        range.setStart(p, 0);
+        range.setEnd(node, offset);
+        return range.getBoundingClientRect().height;
+      }
+
+      let lo = 0, hi = totalLen;
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi + 1) / 2);
+        if (heightUpTo(mid) <= budgetPx) lo = mid; else hi = mid - 1;
+      }
+      let breakOffset = lo;
+      if (breakOffset <= 0 || breakOffset >= totalLen) return null;
+
+      // Don't split mid-word: back up to the previous space.
+      const fullText = textNodes.map(t => t.nodeValue).join('');
+      const spacePos = fullText.lastIndexOf(' ', breakOffset);
+      if (spacePos > 0) breakOffset = spacePos;
+
+      const lineHeightPx = parseFloat(getComputedStyle(p).lineHeight) || 20;
+      if (heightUpTo(breakOffset) < lineHeightPx * 1.5 || breakOffset >= totalLen) return null;
+
+      const { node: splitNode, offset: splitOffset } = offsetToNode(breakOffset);
+      const range = document.createRange();
+      range.setStart(splitNode, splitOffset);
+      range.setEndAfter(p.lastChild);
+      const remainderFragment = range.extractContents();
+
+      // Drop the leading space/line-break left behind at the start of the continuation.
+      const firstText = remainderFragment.firstChild;
+      if (firstText && firstText.nodeType === 3) firstText.nodeValue = firstText.nodeValue.replace(/^\s+/, '');
+
+      const newP = document.createElement('p');
+      newP.appendChild(remainderFragment);
+      p.parentNode.insertBefore(newP, p.nextSibling);
+      return newP;
+    }
+
+    // Places a (possibly very long) paragraph, splitting it across as many
+    // pages as needed, filling each page's remaining space rather than
+    // pushing the whole block onto the next page.
+    function placeParagraph(startNode){
+      const lineHeightPx = parseFloat(getComputedStyle(startNode).lineHeight) || 20;
+      let node = startNode;
+      while (true) {
+        const h = node.getBoundingClientRect().height;
+        const roomLeft = avail - currentHeight;
+        if (h <= roomLeft) {
+          pages[pages.length-1].push(node.outerHTML);
+          currentHeight += h;
+          return;
+        }
+        if (pages[pages.length-1].length > 0 && roomLeft < lineHeightPx * 1.5) {
+          newPage();
+          continue;
+        }
+        const remainder = splitParagraphAtHeight(node, avail - currentHeight);
+        if (!remainder) {
+          if (pages[pages.length-1].length > 0) { newPage(); continue; }
+          // Doesn't even fit a fresh full page and can't be split further — place as-is (overflow fallback).
+          pages[pages.length-1].push(node.outerHTML);
+          currentHeight += h;
+          return;
+        }
+        const fittedHeight = node.getBoundingClientRect().height;
+        pages[pages.length-1].push(node.outerHTML);
+        currentHeight += fittedHeight;
+        newPage();
+        node = remainder;
+      }
+    }
+
+    children.forEach(child => {
+      const h = child.getBoundingClientRect().height;
+      const isSignature = !sigBlockStarted && containsSignatureKeyword(child.textContent || '');
+      if (isSignature) {
+        sigBlockStarted = true;
+        if (pages[pages.length-1].length > 0 && (avail - currentHeight) < sigMinSpacePx) newPage();
+      }
+      if (child.tagName === 'TABLE' && h > (avail - currentHeight)) {
+        splitTable(child);
+      } else if (child.tagName === 'P' && h > (avail - currentHeight)) {
+        placeParagraph(child);
+      } else {
+        if (currentHeight + h > avail && pages[pages.length-1].length > 0) newPage();
+        pages[pages.length-1].push(child.outerHTML);
+        currentHeight += h;
+      }
+    });
+
+    document.body.removeChild(measurer);
+    if (pages.length === 0) pages.push([]);
+    return pages;
+  }
+
+  // ---------- File handling ----------
+  const fileInput = document.getElementById('fileInput');
+  const dropZone = document.getElementById('dropZone');
+  document.getElementById('chooseFileBtn').addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('click', (e) => { if (e.target.id !== 'chooseFileBtn') fileInput.click(); });
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-active'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-active'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-active');
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', e => { if (e.target.files.length) handleFiles(e.target.files); });
+
+  function renderFileQueue(){
+    const box = document.getElementById('fileQueueBox');
+    if (state.fileQueue.length < 2) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const statusLabel = { pending: 'लंबित / Pending', current: 'वर्तमान / Current', printed: 'प्रिंट हुआ / Printed' };
+    box.innerHTML = '<p class="font-semibold mb-1">📄 फ़ाइल कतार / File Queue</p>' +
+      state.fileQueue.map((f, i) => `<div class="flex justify-between ${i===state.queueIndex?'font-semibold text-blue-700':''}">
+        <span>${f.file.name}</span><span>${statusLabel[f.status]}</span></div>`).join('');
+  }
+
+  function handleFiles(fileList){
+    const files = [...fileList];
+    state.fileQueue = files.map(f => ({ file: f, status: 'pending' }));
+    state.queueIndex = -1;
+    renderFileQueue();
+    document.getElementById('nextDocBtn').classList.add('hidden');
+    loadNextQueuedFile();
+  }
+
+  function loadNextQueuedFile(){
+    const nextIndex = state.fileQueue.findIndex((f, i) => i > state.queueIndex && f.status === 'pending');
+    if (nextIndex === -1) return;
+    state.queueIndex = nextIndex;
+    state.fileQueue[nextIndex].status = 'current';
+    renderFileQueue();
+    document.getElementById('nextDocBtn').classList.add('hidden');
+    handleFile(state.fileQueue[nextIndex].file);
+  }
+
+  document.getElementById('nextDocBtn').addEventListener('click', loadNextQueuedFile);
+
+  function handleFile(file){
+    clearStatus();
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      showStatus('कृपया केवल .docx फ़ाइल अपलोड करें / Please upload a .docx file only', 'error');
+      return;
+    }
+    const fileInfo = document.getElementById('fileInfo');
+    fileInfo.classList.remove('hidden');
+    fileInfo.textContent = file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+
+    document.getElementById('uploadSpinner').classList.remove('hidden');
+
+    const reader = new FileReader();
+    reader.onload = function(e){
+      mammoth.convertToHtml({ arrayBuffer: e.target.result }, {
+        styleMap: [
+          "p[style-name='Heading 1'] => h2:fresh",
+          "p[style-name='Heading 2'] => h3:fresh"
+        ]
+      }).then(result => {
+        document.getElementById('uploadSpinner').classList.add('hidden');
+        const clean = sanitizeHTML(result.value);
+        const plain = clean.replace(/<[^>]+>/g, '').trim();
+        if (!plain) {
+          showStatus('दस्तावेज़ खाली है / Document appears empty after parsing.', 'error');
+          return;
+        }
+        state.fileName = file.name;
+        if (result.messages && result.messages.length) {
+          const lossy = result.messages.some(m => /image|unrecognised|unsupported/i.test(m.message || ''));
+          if (lossy) {
+            showStatus('कुछ सामग्री (जैसे चित्र) प्रदर्शित नहीं की जा सकी — आंशिक दस्तावेज़ दिखाया गया / Some content (e.g. images) could not be read — showing partial document', 'warn');
+          } else {
+            showStatus('कुछ चेतावनियाँ मिलीं / Some warnings during parsing (' + result.messages.length + ')', 'warn');
+          }
+        }
+        showStatus('फ़ाइल सफलतापूर्वक लोड हुई / File loaded successfully', 'success');
+        processFontEncoding(clean, renderPreviewFresh);
+      }).catch(err => {
+        document.getElementById('uploadSpinner').classList.add('hidden');
+        showStatus('फ़ाइल पढ़ने में त्रुटि / Error reading file. Try re-saving in Microsoft Word and uploading again.', 'error');
+        console.error(err);
+      });
+    };
+    reader.onerror = function(){
+      document.getElementById('uploadSpinner').classList.add('hidden');
+      showStatus('फ़ाइल पढ़ने में त्रुटि / Error reading file. Try re-saving in Microsoft Word and uploading again.', 'error');
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ---------- State preset ----------
+  document.getElementById('statePreset').addEventListener('change', e => {
+    const opt = e.target.selectedOptions[0];
+    if (opt.value !== 'custom') {
+      state.page1Top = parseFloat(opt.value);
+      document.getElementById('page1Top').value = state.page1Top;
+      applyAndRender();
+    }
+  });
+
+  // ---------- Sliders ----------
+  const sliderMap = {
+    page1Top: 'page1Top', page2Top: 'page2Top', leftMargin: 'leftMargin',
+    rightMargin: 'rightMargin', bottomMargin: 'bottomMargin', fontSize: 'fontSize', lineHeight: 'lineHeight'
+  };
+  let debounceTimer = null;
+  Object.keys(sliderMap).forEach(id => {
+    document.getElementById(id).addEventListener('input', e => {
+      state[id] = parseFloat(e.target.value);
+      updateReadouts();
+      applyCSSVars();
+      saveSettings();
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(renderPreview, 150);
+    });
+  });
+
+  document.getElementById('statePreset').addEventListener('change', saveSettings);
+  document.getElementById('fontEncoding').addEventListener('change', saveSettings);
+
+  // ---------- Paper size ----------
+  document.getElementById('paperSize').addEventListener('change', e => {
+    state.paperSize = e.target.value;
+    applyPaperSizeCSS();
+    saveSettings();
+    if (state.htmlContent) renderPreview();
+  });
+
+  // ---------- Dark mode ----------
+  document.getElementById('darkModeToggle').addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    document.getElementById('darkModeToggle').textContent = isDark ? '☀️' : '🌙';
+    saveSettings();
+  });
+
+  // ---------- Help modal ----------
+  document.getElementById('helpBtn').addEventListener('click', () => document.getElementById('helpModal').classList.remove('hidden'));
+  document.getElementById('helpCloseBtn').addEventListener('click', () => document.getElementById('helpModal').classList.add('hidden'));
+
+  // ---------- Collapsible panels ----------
+  function wireCollapsible(toggleId, bodyId, arrowId){
+    document.getElementById(toggleId).addEventListener('click', () => {
+      const body = document.getElementById(bodyId);
+      const arrow = document.getElementById(arrowId);
+      body.classList.toggle('hidden');
+      arrow.textContent = body.classList.contains('hidden') ? '▶' : '▼';
+    });
+  }
+  wireCollapsible('statsPanelToggle', 'statsPanelBody', 'statsPanelArrow');
+  wireCollapsible('shortcutsPanelToggle', 'shortcutsPanelBody', 'shortcutsPanelArrow');
+
+  // ---------- Full size preview toggle ----------
+  function applyFullSizeUI(){
+    document.getElementById('previewContainer').classList.toggle('fullsize-preview', state.fullSize);
+    document.querySelector('.zoom-controls').style.visibility = state.fullSize ? 'hidden' : 'visible';
+    document.getElementById('fullSizeToggle').textContent = state.fullSize
+      ? '🔍 फिट पूर्वावलोकन / Fitted Preview'
+      : '🔍 पूर्ण आकार / Full Size';
+  }
+  document.getElementById('fullSizeToggle').addEventListener('click', () => {
+    state.fullSize = !state.fullSize;
+    applyFullSizeUI();
+    if (state.htmlContent) renderPreview();
+  });
+
+  // ---------- Direct content editing ----------
+  // Each preview page renders its own .registry-content slice of state.htmlContent.
+  // While editing, we leave those slices alone (no re-render on keystroke, so the
+  // cursor never jumps) and only pull the edited HTML back into state.htmlContent —
+  // via syncEditableContent() — right before anything that would rebuild the
+  // preview or the print DOM from that string (margin/zoom changes, printing,
+  // turning edit mode off). That keeps in-progress edits from ever being
+  // silently discarded by a re-render.
+  function syncEditableContent(){
+    if (!state.editMode) return;
+    const editors = [...document.querySelectorAll('#previewContainer .registry-content')];
+    if (!editors.length) return;
+    const combined = editors.map(el => el.innerHTML).join('');
+    state.htmlContent = enhanceTables(combined);
+    if (state.convertedHtml !== null) state.convertedHtml = state.htmlContent;
+    else state.rawHtml = state.htmlContent;
+  }
+
+  function applyEditModeUI(){
+    document.querySelectorAll('#previewContainer .registry-content').forEach(el => {
+      el.contentEditable = state.editMode ? 'true' : 'false';
+    });
+    document.getElementById('formatToolbar').classList.toggle('hidden', !state.editMode);
+    document.getElementById('editToggleBtn').textContent = state.editMode
+      ? '✅ संपादन समाप्त करें / Done Editing'
+      : '✏️ संपादित करें / Edit Content';
+  }
+
+  document.getElementById('editToggleBtn').addEventListener('click', () => {
+    if (state.editMode) {
+      syncEditableContent();
+      state.editMode = false;
+      applyEditModeUI();
+      renderPreview(); // reflow the edited content into correct pages
+    } else {
+      state.editMode = true;
+      applyEditModeUI();
+    }
+  });
+
+  document.querySelectorAll('#formatToolbar .fmt-btn').forEach(btn => {
+    // Prevent the button from stealing focus, which would collapse the
+    // active text selection inside the editable page before execCommand runs.
+    btn.addEventListener('mousedown', e => e.preventDefault());
+    btn.addEventListener('click', () => {
+      document.execCommand(btn.dataset.cmd, false, null);
+    });
+  });
+
+  // ---------- Zoom controls ----------
+  function setScale(newScale){
+    scale = Math.max(0.25, Math.min(1.5, newScale));
+    updateZoomReadout();
+    if (state.htmlContent) renderPreview();
+  }
+  document.getElementById('zoomInBtn').addEventListener('click', () => setScale(scale + 0.1));
+  document.getElementById('zoomOutBtn').addEventListener('click', () => setScale(scale - 0.1));
+  document.getElementById('zoomResetBtn').addEventListener('click', () => setScale(DEFAULT_SCALE));
+
+  // Trackpad pinch / Ctrl+wheel sends a wheel event with ctrlKey=true in Chrome
+  // and would otherwise zoom the ENTIRE page (control panel included). Block
+  // that globally, and instead let it drive our own preview-only zoom when
+  // the gesture happens over the right panel.
+  document.addEventListener('wheel', e => {
+    if (e.ctrlKey) e.preventDefault();
+  }, { passive: false });
+
+  document.getElementById('rightPanel').addEventListener('wheel', e => {
+    if (!e.ctrlKey || !state.htmlContent) return;
+    e.preventDefault();
+    if (state.fullSize) {
+      state.fullSize = false;
+      applyFullSizeUI();
+    }
+    setScale(scale - e.deltaY * 0.0015);
+  }, { passive: false });
+
+  // ---------- Offline detection ----------
+  function updateOfflineState(){
+    if (!navigator.onLine) {
+      document.documentElement.style.setProperty('--doc-fallback', '1');
+      document.querySelectorAll('.registry-content').forEach(el => {
+        el.style.fontFamily = "'Noto Sans Devanagari','Mangal','Aparajita','Kokila',sans-serif";
+      });
+      showStatus('⚡ ऑफ़लाइन मोड — सिस्टम फ़ॉण्ट उपयोग में / Offline mode — using system fonts', 'warn');
+    }
+  }
+  window.addEventListener('offline', updateOfflineState);
+
+  function applyAndRender(){
+    updateReadouts();
+    applyCSSVars();
+    renderPreview();
+  }
+
+  // ---------- Pagination / Preview rendering ----------
+  function renderPreviewFresh(){
+    scale = DEFAULT_SCALE;
+    state.fullSize = false;
+    state.editMode = false;
+    applyFullSizeUI();
+    applyEditModeUI();
+    updateZoomReadout();
+    renderPreview();
+    // New document loaded -> the print-gate module should scope any future
+    // unlock to a fresh random session key, never derived from this content.
+    window.__registryHooks?.onNewDocumentLoaded?.();
+  }
+
+  function renderPreview(){
+    syncEditableContent(); // pull in-progress edits before rebuilding the DOM from state.htmlContent
+    if (!state.htmlContent) return;
+    document.getElementById('emptyState').classList.add('hidden');
+    document.getElementById('previewToolbar').classList.remove('hidden');
+    const container = document.getElementById('previewContainer');
+    container.classList.remove('hidden');
+    container.innerHTML = '';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.alignItems = 'center';
+    container.style.gap = '28px';
+
+    const pages = paginateContent(state.htmlContent, {
+      leftMargin: state.leftMargin, rightMargin: state.rightMargin,
+      page1Top: state.page1Top, page2Top: state.page2Top, bottomMargin: state.bottomMargin,
+      fontSize: state.fontSize, lineHeight: state.lineHeight,
+      pageWmm: currentPaper().wMM, pageHmm: currentPaper().hMM
+    });
+
+    state.pageCount = pages.length;
+    updateStats(pages.length);
+
+    const page1GapMM = stampGapMM(state.fontSize, state.lineHeight);
+    const scaledPageWidthPx = pageWidthPx() * scale;
+
+    pages.forEach((pageHTMLs, idx) => {
+      const card = document.createElement('div');
+      card.className = 'page-card';
+      card.style.animationDelay = (idx * 0.06) + 's';
+
+      const label = document.createElement('div');
+      label.className = 'page-label no-print';
+      label.textContent = 'पृष्ठ ' + (idx + 1) + ' / Page ' + (idx + 1);
+      card.appendChild(label);
+
+      const scaledWrap = document.createElement('div');
+      scaledWrap.className = 'scaled-wrap page-shadow';
+      if (state.fullSize) {
+        // No transform, no reserved box — let the wrapper hug the page's
+        // real physical size so the flex container can center it correctly.
+        scaledWrap.style.transform = 'none';
+        scaledWrap.style.width = 'auto';
+        scaledWrap.style.height = 'auto';
+      } else {
+        scaledWrap.style.transform = `scale(${scale})`;
+        // Reserve exactly the post-scale footprint so the flex layout doesn't
+        // leave the original (unscaled) blank space behind the shrunk page.
+        scaledWrap.style.width = scaledPageWidthPx + 'px';
+        scaledWrap.style.height = (pageHeightPx() * scale) + 'px';
+      }
+
+      const page = document.createElement('div');
+      page.className = 'print-page ' + (idx === 0 ? 'page-1' : 'page-n');
+
+      if (idx === 0) {
+        const overlay = document.createElement('div');
+        overlay.className = 'stamp-zone-overlay';
+        overlay.textContent = '← स्टाम्प क्षेत्र / Stamp Area →';
+        page.appendChild(overlay);
+      }
+
+      const content = document.createElement('div');
+      content.className = 'registry-content';
+      if (idx === 0) content.style.marginTop = page1GapMM + 'mm';
+      content.innerHTML = pageHTMLs.join('');
+      page.appendChild(content);
+
+      const pageNum = document.createElement('div');
+      pageNum.className = 'page-number-footer';
+      pageNum.textContent = 'पृष्ठ ' + (idx + 1);
+      page.appendChild(pageNum);
+
+      scaledWrap.appendChild(page);
+      card.appendChild(scaledWrap);
+      container.appendChild(card);
+
+      if (idx < pages.length - 1) {
+        const brk = document.createElement('div');
+        brk.className = 'page-break-indicator no-print';
+        brk.style.width = (state.fullSize ? pageWidthPx() : scaledPageWidthPx) + 'px';
+        brk.innerHTML = '<span>पृष्ठ विराम / Page Break</span>';
+        container.appendChild(brk);
+      }
+    });
+
+    applyEditModeUI(); // re-apply contentEditable to the freshly built pages if still editing
+  }
+
+  // ---------- Print ----------
+  function openChecklistModal(){
+    if (!state.htmlContent) {
+      showStatus('कृपया पहले फ़ाइल अपलोड करें / Please upload a file first', 'error');
+      return;
+    }
+    document.querySelectorAll('.checklist-item').forEach(cb => cb.checked = false);
+    const isA4 = state.paperSize === 'a4';
+    document.getElementById('checklistPaperLine1').textContent = isA4
+      ? 'प्रिंटर में A4 (210 × 297 mm) स्टाम्प पेपर लगा है / A4 stamp paper loaded in printer'
+      : 'प्रिंटर में Legal (8.5 × 14") स्टाम्प पेपर लगा है / Legal stamp paper loaded in printer';
+    document.getElementById('checklistPaperLine2').textContent = isA4
+      ? 'Paper Size: A4 (210 × 297 mm) चुना है / Selected A4 paper size'
+      : 'Paper Size: Legal (8.5 × 14 in) चुना है / Selected Legal paper size';
+    document.getElementById('checklistModal').classList.remove('hidden');
+  }
+  // Monetization gate: the print-gate module (apps/web/src/registry/print-gate.js)
+  // attaches its own click handler that calls window.__registryHooks.openChecklistModal()
+  // only after the entitlement/device/unlock checks pass. See apps/web/src/main.js.
+  window.__registryHooks = {
+    hasDocumentLoaded: () => !!state.htmlContent,
+    getPageCount: () => state.pageCount || 1,
+    showStatus,
+    openChecklistModal,
+    onNewDocumentLoaded: null, // set by apps/web/src/main.js
+  };
+  document.getElementById('checklistBackBtn').addEventListener('click', () => {
+    document.getElementById('checklistModal').classList.add('hidden');
+  });
+  document.getElementById('checklistPrintBtn').addEventListener('click', () => {
+    document.getElementById('checklistModal').classList.add('hidden');
+    printDocument();
+  });
+
+  function printDocument(){
+    const originalTitle = document.title;
+    document.title = 'Registry_Document_' + new Date().toISOString().slice(0,10);
+    buildPrintDOM();
+    window.print();
+    setTimeout(() => { document.title = originalTitle; }, 1000);
+  }
+
+  function buildPrintDOM(){
+    syncEditableContent(); // capture any in-progress edits before printing
+    // Remove any prior print DOM
+    const existing = document.getElementById('printRoot');
+    if (existing) existing.remove();
+
+    const pages = paginateContent(state.htmlContent, {
+      leftMargin: state.leftMargin, rightMargin: state.rightMargin,
+      page1Top: state.page1Top, page2Top: state.page2Top, bottomMargin: state.bottomMargin,
+      fontSize: state.fontSize, lineHeight: state.lineHeight,
+      pageWmm: currentPaper().wMM, pageHmm: currentPaper().hMM
+    });
+
+    const page1GapMM = stampGapMM(state.fontSize, state.lineHeight);
+    const printRoot = document.createElement('div');
+    printRoot.id = 'printRoot';
+    pages.forEach((pageHTMLs, idx) => {
+      const page = document.createElement('div');
+      page.className = 'print-page ' + (idx === 0 ? 'page-1' : 'page-n');
+      const content = document.createElement('div');
+      content.className = 'registry-content';
+      if (idx === 0) content.style.marginTop = page1GapMM + 'mm';
+      content.innerHTML = pageHTMLs.join('');
+      page.appendChild(content);
+      const pageNum = document.createElement('div');
+      pageNum.className = 'page-number-footer';
+      pageNum.textContent = 'पृष्ठ ' + (idx + 1);
+      page.appendChild(pageNum);
+      printRoot.appendChild(page);
+    });
+
+    document.body.appendChild(printRoot);
+    document.getElementById('controlPanel').classList.add('hidden-for-print-only');
+  }
+
+  window.addEventListener('afterprint', () => {
+    const pr = document.getElementById('printRoot');
+    if (pr) pr.remove();
+    if (state.queueIndex >= 0 && state.fileQueue[state.queueIndex]) {
+      state.fileQueue[state.queueIndex].status = 'printed';
+      renderFileQueue();
+      const hasNext = state.fileQueue.some((f, i) => i > state.queueIndex && f.status === 'pending');
+      document.getElementById('nextDocBtn').classList.toggle('hidden', !hasNext);
+    }
+  });
+
+  // ---------- Test Page ----------
+  document.getElementById('printTestBtn').addEventListener('click', () => {
+    buildTestPageDOM();
+    window.print();
+  });
+
+  function buildTestPageDOM(){
+    const existing = document.getElementById('printRoot');
+    if (existing) existing.remove();
+
+    const printRoot = document.createElement('div');
+    printRoot.id = 'printRoot';
+    printRoot.innerHTML = `
+      <div class="print-page page-1" style="padding-top:0; position:relative;">
+        <div style="position:absolute; top:${state.page1Top}mm; left:0; right:0; border-top:3px dashed #000; text-align:center; font-family:'Noto Sans Devanagari',sans-serif; font-size:10pt; padding-top:2mm;">
+          ▼ स्टाम्प क्षेत्र यहाँ समाप्त होता है / Stamp header ends here ▼
+        </div>
+        <div style="position:absolute; top:0; left:0; right:0; bottom:0; border:2px solid #000; margin: ${state.page1Top}mm ${state.rightMargin}mm ${state.bottomMargin}mm ${state.leftMargin}mm;"></div>
+        ${buildRuler()}
+        ${buildCornerMarks()}
+        <div style="position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-family:'Noto Sans Devanagari',sans-serif; font-size:12pt; line-height:1.8; padding:0 20mm;">
+          <strong>अंशांकन परीक्षण पृष्ठ / Calibration Test Page</strong><br><br>
+          1. यह पृष्ठ आपके स्टाम्प पेपर पर प्रिंट करें<br>
+          2. ऊपरी धराशायी रेखा स्टाम्प शीर्षक के निचले किनारे पर होनी चाहिए<br>
+          3. यदि संरेखित नहीं है, तो 'पृष्ठ 1 ऊपरी हाशिया' स्लाइडर समायोजित करें और पुनः प्रिंट करें<br><br>
+          <span style="font-size:10pt;">Print this page on your stamp paper. The dashed line at top should align with the bottom edge of your stamp header. If misaligned, adjust the 'Page 1 Top Margin' slider and reprint.</span>
+        </div>
+        <div style="position:absolute; bottom:5mm; left:5mm; right:5mm; font-size:8pt; font-family:'Segoe UI',sans-serif; border:1px solid #999; padding:2mm; background:#f9f9f9;">
+          Page1Top: ${state.page1Top}mm | Page2+Top: ${state.page2Top}mm | Left: ${state.leftMargin}mm | Right: ${state.rightMargin}mm | Bottom: ${state.bottomMargin}mm | Font: ${state.fontSize}pt | Line Height: ${state.lineHeight}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(printRoot);
+  }
+
+  function buildRuler(){
+    const p = currentPaper();
+    let ticks = '';
+    for (let m = 0; m <= Math.floor(p.hMM / 10) * 10; m += 10) {
+      const isMajor = m % 50 === 0;
+      ticks += `<div style="position:absolute; top:${m}mm; left:0; width:${isMajor?'8mm':'4mm'}; border-top:1px solid #000;"></div>`;
+      if (isMajor) ticks += `<div style="position:absolute; top:${m-2}mm; left:9mm; font-size:6pt; font-family:sans-serif;">${m}</div>`;
+    }
+    for (let m = 0; m <= Math.floor(p.wMM / 10) * 10; m += 10) {
+      const isMajor = m % 50 === 0;
+      ticks += `<div style="position:absolute; left:${m}mm; top:0; height:${isMajor?'8mm':'4mm'}; border-left:1px solid #000;"></div>`;
+      if (isMajor) ticks += `<div style="position:absolute; left:${m}mm; top:9mm; font-size:6pt; font-family:sans-serif;">${m}</div>`;
+    }
+    return `<div style="position:absolute; top:0; left:0; right:0; bottom:0;">${ticks}</div>`;
+  }
+
+  function buildCornerMarks(){
+    const s = '6mm';
+    const corners = [
+      `top:0; left:0; border-top:2px solid #000; border-left:2px solid #000;`,
+      `top:0; right:0; border-top:2px solid #000; border-right:2px solid #000;`,
+      `bottom:0; left:0; border-bottom:2px solid #000; border-left:2px solid #000;`,
+      `bottom:0; right:0; border-bottom:2px solid #000; border-right:2px solid #000;`
+    ];
+    return corners.map(c => `<div style="position:absolute; width:${s}; height:${s}; ${c}"></div>`).join('');
+  }
+
+  // ---------- Reset ----------
+  function resetAllSettings(){
+    if (!confirm('सभी सेटिंग्स रीसेट करें? / Reset all settings?')) return;
+    state.page1Top = 105; state.page2Top = 20; state.leftMargin = 31.75;
+    state.rightMargin = 19.05; state.bottomMargin = 20; state.fontSize = 14; state.lineHeight = 1.8;
+    document.getElementById('page1Top').value = 105;
+    document.getElementById('page2Top').value = 20;
+    document.getElementById('leftMargin').value = 31.75;
+    document.getElementById('rightMargin').value = 19.05;
+    document.getElementById('bottomMargin').value = 20;
+    document.getElementById('fontSize').value = 14;
+    document.getElementById('lineHeight').value = 1.8;
+    document.getElementById('statePreset').value = 'custom';
+    document.getElementById('fontEncoding').value = 'auto';
+    state.paperSize = 'legal';
+    document.getElementById('paperSize').value = 'legal';
+    applyPaperSizeCSS();
+    document.documentElement.classList.remove('dark');
+    document.getElementById('darkModeToggle').textContent = '🌙';
+    try { localStorage.removeItem(SETTINGS_KEY); } catch (e) {}
+    applyAndRender();
+  }
+  document.getElementById('resetBtn').addEventListener('click', resetAllSettings);
+
+  // ---------- Keyboard shortcuts ----------
+  window.addEventListener('keydown', e => {
+    const ctrl = e.ctrlKey || e.metaKey;
+    if (!ctrl) return;
+    const key = e.key.toLowerCase();
+    if (key === 'p') { e.preventDefault(); document.getElementById('printDocBtn').click(); }
+    else if (key === 't') { e.preventDefault(); document.getElementById('printTestBtn').click(); }
+    else if (key === 'r') { e.preventDefault(); resetAllSettings(); }
+    else if (key === 'o') { e.preventDefault(); fileInput.click(); }
+  });
+
+  // init
+  loadSettings();
+  applyCSSVars();
+  applyPaperSizeCSS();
+  updateReadouts();
+  updateOfflineState();
+})();
+</script>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

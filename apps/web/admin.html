@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Hindi Registry Print Tool</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Segoe UI', Inter, Tahoma, Arial, sans-serif; background: #f8fafc; color: #1e2433; }
+  .panel-section { background: #fff; border: 1px solid #e6e9f0; border-radius: 12px; padding: 16px; box-shadow: 0 1px 2px rgba(30,36,51,0.04); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; }
+  .btn-primary { background: #4f46e5; color: #fff; }
+  .btn-primary:hover { background: #4338ca; }
+  .btn-secondary { background: #eef0f4; color: #1e2433; }
+  .btn-secondary:hover { background: #e2e5eb; }
+  .btn-danger { background: #dc2626; color: #fff; }
+  .btn-danger:hover { background: #b91c1c; }
+  .field-input { width: 100%; border: 1.5px solid #e6e9f0; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e6e9f0; vertical-align: top; }
+  th { color: #64748b; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+  .pill-pending { background: #fef3c7; color: #92400e; }
+  .pill-approved { background: #d1fae5; color: #065f46; }
+  .pill-rejected { background: #fee2e2; color: #991b1b; }
+</style>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-5xl mx-auto p-6 space-y-6">
+    <header class="flex items-center justify-between">
+      <h1 class="text-xl font-bold">Admin — Hindi Registry Print Tool</h1>
+      <div id="adminWhoAmI" class="text-xs text-gray-500"></div>
+    </header>
+
+    <div id="adminLoginGate" class="panel-section">
+      <p class="text-sm mb-3">Sign in with your admin account to continue.</p>
+      <div class="flex gap-2 max-w-sm">
+        <input id="adminLoginEmail" type="email" class="field-input" placeholder="you@example.com" />
+        <button id="adminLoginSendBtn" class="btn btn-primary">Send sign-in link</button>
+      </div>
+      <button id="adminLoginContinueBtn" class="btn btn-secondary mt-2 hidden">I've signed in — Continue</button>
+      <p id="adminLoginStatus" class="text-xs text-gray-500 mt-2"></p>
+    </div>
+
+    <div id="adminForbidden" class="panel-section hidden">
+      <p class="text-sm text-red-600">
+        This account is not on the admin allow-list. Add its email to
+        <code>ADMIN_EMAIL_ALLOWLIST</code> in <code>apps/worker/wrangler.toml</code> (or as a
+        Worker secret) and redeploy.
+      </p>
+    </div>
+
+    <main id="adminApp" class="space-y-6 hidden">
+      <section class="panel-section">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-bold">Manual UPI payment requests</h2>
+          <select id="manualPaymentsFilter" class="field-input" style="width:auto;">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+        <div id="manualPaymentsTable">Loading…</div>
+      </section>
+
+      <section class="panel-section">
+        <h2 class="font-bold mb-3">Grant a plan manually</h2>
+        <p class="text-xs text-gray-500 mb-3">
+          For payments collected outside the app, or support corrections. Requires the
+          customer's Supabase user ID (visible on their manual-payment request row above, or via
+          user search below).
+        </p>
+        <div class="grid sm:grid-cols-3 gap-2 max-w-2xl">
+          <input id="grantUserId" class="field-input" placeholder="User ID (uuid)" />
+          <select id="grantPlanId" class="field-input"></select>
+          <input id="grantReason" class="field-input" placeholder="Reason (optional)" />
+        </div>
+        <button id="grantSubmitBtn" class="btn btn-primary mt-2">Grant</button>
+        <span id="grantStatus" class="text-xs text-gray-500 ml-2"></span>
+      </section>
+
+      <section class="panel-section">
+        <h2 class="font-bold mb-3">Adjust credits directly</h2>
+        <div class="grid sm:grid-cols-3 gap-2 max-w-2xl">
+          <input id="creditUserId" class="field-input" placeholder="User ID (uuid)" />
+          <input id="creditAmount" type="number" class="field-input" placeholder="Amount (+/-)" />
+          <input id="creditReason" class="field-input" placeholder="Reason (optional)" />
+        </div>
+        <button id="creditSubmitBtn" class="btn btn-primary mt-2">Adjust</button>
+        <span id="creditStatus" class="text-xs text-gray-500 ml-2"></span>
+      </section>
+
+      <section class="panel-section">
+        <h2 class="font-bold mb-3">Manage a user's print count (free trial)</h2>
+        <p class="text-xs text-gray-500 mb-3">
+          "Print count" here means the trial's document-unlock counter — the app
+          only ever knows a document was unlocked for printing, not that the OS
+          print dialog was actually used. This is the only place to view/edit it
+          without going to the Supabase SQL editor.
+        </p>
+        <div class="flex gap-2 max-w-xl mb-2">
+          <input id="trialUserId" class="field-input" placeholder="User ID (uuid)" />
+          <button id="trialLoadBtn" class="btn btn-secondary">Load</button>
+        </div>
+        <div id="trialInfo" class="text-xs text-gray-500 mb-3"></div>
+        <div class="grid sm:grid-cols-3 gap-2 max-w-2xl">
+          <div>
+            <label class="text-xs font-semibold block mb-1">Unlocks used</label>
+            <input id="trialUnlocksUsed" type="number" class="field-input" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold block mb-1">Unlock limit</label>
+            <input id="trialUnlockLimit" type="number" class="field-input" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold block mb-1">Trial ends at</label>
+            <input id="trialEndsAt" type="datetime-local" class="field-input" />
+          </div>
+        </div>
+        <button id="trialSaveBtn" class="btn btn-primary mt-2">Save</button>
+        <span id="trialStatus" class="text-xs text-gray-500 ml-2"></span>
+        <div id="trialUnlockHistory" class="mt-3"></div>
+      </section>
+
+      <section class="panel-section">
+        <h2 class="font-bold mb-3">Look up a user's entitlement</h2>
+        <div class="flex gap-2 max-w-xl">
+          <input id="lookupUserId" class="field-input" placeholder="User ID (uuid)" />
+          <button id="lookupSubmitBtn" class="btn btn-secondary">Look up</button>
+        </div>
+        <pre id="lookupResult" class="text-xs bg-gray-50 border rounded p-3 mt-2 overflow-x-auto"></pre>
+      </section>
+
+      <section class="panel-section">
+        <h2 class="font-bold mb-3">Find a user by email</h2>
+        <p class="text-xs text-gray-500 mb-2">
+          Best-effort — depends on your Supabase project's admin API supporting email filtering.
+          If this returns nothing, use the email shown on a manual-payment request instead.
+        </p>
+        <div class="flex gap-2 max-w-xl">
+          <input id="searchEmail" type="email" class="field-input" placeholder="user@example.com" />
+          <button id="searchSubmitBtn" class="btn btn-secondary">Search</button>
+        </div>
+        <div id="searchResult" class="text-xs mt-2"></div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="/src/admin/main.js"></script>
+</body>
+</html>

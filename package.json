@@ -1,0 +1,20 @@
+{
+  "name": "hindi-registry-tool",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/web",
+    "apps/worker"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "dev:web": "npm run dev --workspace apps/web",
+    "dev:worker": "npm run dev --workspace apps/worker"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.0",
+    "@playwright/test": "^1.48.0"
+  }
+}

@@ -1,0 +1,21 @@
+name = "hindi-registry-api"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Non-secret config can live here per environment; SECRETS below must be set
+# with `wrangler secret put <NAME>` — never committed to this file or to git.
+[vars]
+CASHFREE_ENV = "sandbox"
+CASHFREE_API_VERSION = "2026-01-01"
+APP_BASE_URL = "http://localhost:5173"
+CORS_ALLOWED_ORIGIN = "http://localhost:5173"
+ADMIN_EMAIL_ALLOWLIST = "shadababbas.25@gmail.com"
+
+# Secrets (set via `wrangler secret put NAME`, one per line, never in this file):
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   CASHFREE_CLIENT_ID
+#   CASHFREE_CLIENT_SECRET
+
+[env.production]
+vars = { CASHFREE_ENV = "production", APP_BASE_URL = "https://app.<domain>.in", CORS_ALLOWED_ORIGIN = "https://app.<domain>.in" }

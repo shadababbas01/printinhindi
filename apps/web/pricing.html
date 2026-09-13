@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<title>Pricing — Hindi Registry Print Tool</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; color: #1e2433; }
+  h1 { font-size: 24px; text-align: center; }
+  .tagline { text-align: center; color: #64748b; margin-bottom: 32px; }
+  #plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .plan-card { border: 1px solid #e6e9f0; border-radius: 14px; padding: 20px; }
+  .plan-card .price { font-size: 22px; font-weight: 700; margin: 8px 0; }
+  .badge { background: #7c3aed; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 999px; }
+</style>
+</head>
+<body>
+  <h1>हिंदी रजिस्ट्री प्रिंट टूल — Pricing</h1>
+  <p class="tagline">Hindi Registry Printing, properly aligned — without sending your registry document to a server.</p>
+  <div id="plans">लोड हो रहा है... / Loading plans...</div>
+
+  <script type="module">
+    import { billingApi } from '/src/billing/api.js';
+    const RECOMMENDED = 'professional_annual';
+    (async () => {
+      try {
+        const { plans } = await billingApi.getPlans();
+        const container = document.getElementById('plans');
+        container.innerHTML = plans
+          .filter((p) => p.billing_type !== 'free')
+          .map((p) => {
+            const rupees = (p.amount_paise / 100).toLocaleString('en-IN');
+            const price = p.billing_type === 'recurring' ? `₹${rupees}/${p.billing_interval}` : `₹${rupees}`;
+            return `<div class="plan-card">
+              <p>${p.name} ${p.id === RECOMMENDED ? '<span class="badge">Best Value</span>' : ''}</p>
+              <p class="price">${price}</p>
+              <p style="color:#64748b;font-size:13px;">${p.description}</p>
+              <a href="/index.html" style="display:block;text-align:center;margin-top:12px;background:#4f46e5;color:#fff;padding:8px;border-radius:8px;text-decoration:none;">Open App to Choose</a>
+            </div>`;
+          })
+          .join('');
+      } catch (err) {
+        document.getElementById('plans').textContent = 'Plans API not reachable — set VITE_API_BASE_URL and deploy the Worker first.';
+      }
+    })();
+  </script>
+</body>
+</html>
