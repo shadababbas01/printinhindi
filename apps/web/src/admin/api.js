@@ -44,4 +44,5 @@ export const adminApi = {
     apiFetch('/api/v1/admin/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
   unsubscribePush: (endpoint) =>
     apiFetch('/api/v1/admin/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
+  testPush: () => apiFetch('/api/v1/admin/push/test', { method: 'POST' }),
 };

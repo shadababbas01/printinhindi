@@ -3,6 +3,7 @@ import { requireUser, isResponse, isAdmin, type AuthedUser } from '../middleware
 import { serviceClient } from '../services/supabase';
 import { planGrantMechanism } from '../services/grants';
 import { loadEntitlement } from './entitlements';
+import { sendTestPushToAdmins } from '../services/push';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -290,6 +291,23 @@ export async function handleAdminPushUnsubscribe(env: Env, request: Request): Pr
   const db = serviceClient(env);
   await db.from('admin_push_subscriptions').delete().eq('endpoint', body.endpoint);
   return json({ ok: true });
+}
+
+// Sends a real push to every subscribed admin device right now and reports
+// exactly what each subscription's push service said back — used by the
+// admin panel's "Send test notification" button so a delivery problem is
+// visible immediately instead of only showing up (silently) on the next
+// real payment submission.
+export async function handleAdminPushTest(env: Env, request: Request): Promise<Response> {
+  const admin = await requireAdmin(env, request);
+  if (isResponse(admin)) return admin;
+
+  try {
+    const results = await sendTestPushToAdmins(env);
+    return json({ results });
+  } catch (err: any) {
+    return json({ error: err?.message || 'PUSH_TEST_FAILED' }, 500);
+  }
 }
 
 export async function handleAdminRevokeDevice(env: Env, request: Request, deviceId: string): Promise<Response> {

@@ -25,6 +25,7 @@ import {
   handleAdminGetUnlockHistory,
   handleAdminPushSubscribe,
   handleAdminPushUnsubscribe,
+  handleAdminPushTest,
 } from './routes/admin';
 
 export interface Env {
@@ -139,6 +140,8 @@ export default {
         res = await handleAdminPushSubscribe(env, request);
       } else if (path === '/api/v1/admin/push/unsubscribe' && request.method === 'POST') {
         res = await handleAdminPushUnsubscribe(env, request);
+      } else if (path === '/api/v1/admin/push/test' && request.method === 'POST') {
+        res = await handleAdminPushTest(env, request);
       } else {
         res = new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
           status: 404,

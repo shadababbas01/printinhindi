@@ -13,7 +13,12 @@ function urlBase64ToUint8Array(base64Url) {
 }
 
 export function pushSupported() {
-  return 'serviceWorker' in navigator && 'PushManager' in window && !!import.meta.env.VITE_VAPID_PUBLIC_KEY;
+  return (
+    'Notification' in window &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    !!import.meta.env.VITE_VAPID_PUBLIC_KEY
+  );
 }
 
 export async function getExistingPushSubscription() {
@@ -22,21 +27,49 @@ export async function getExistingPushSubscription() {
   return reg ? reg.pushManager.getSubscription() : null;
 }
 
-export async function enablePush() {
-  if (!pushSupported()) throw new Error('Push notifications are not supported in this browser.');
+// onStep(message) is called after each stage completes, so the caller can
+// show a running log instead of one opaque "Enabling…" — iOS Safari's push
+// stack has enough platform-specific failure points (Home Screen install
+// required, permission state, subscribe rejecting) that pinpointing exactly
+// where it stalls/fails matters more here than on desktop browsers.
+export async function enablePush(onStep = () => {}) {
+  if (!('Notification' in window)) {
+    throw new Error(
+      'Notifications API not available — on iPhone this only exists once the page is opened from an icon added to the Home Screen (Share → Add to Home Screen), not a regular Safari tab.'
+    );
+  }
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    throw new Error('Push is not supported in this browser (requires iOS 16.4+ if on iPhone).');
+  }
+  if (!import.meta.env.VITE_VAPID_PUBLIC_KEY) {
+    throw new Error('VITE_VAPID_PUBLIC_KEY is missing from this build.');
+  }
 
+  if (Notification.permission === 'denied') {
+    throw new Error(
+      'Notifications are blocked for this app. On iPhone: Settings → the app name (under installed web apps) → Notifications → Allow.'
+    );
+  }
+
+  onStep('Requesting notification permission…');
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') throw new Error('Notification permission was not granted.');
+  if (permission !== 'granted') throw new Error(`Permission was "${permission}", not granted.`);
+  onStep('Permission granted.');
 
+  onStep('Registering service worker…');
   const reg = await navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE });
   await navigator.serviceWorker.ready;
+  onStep('Service worker ready.');
 
+  onStep('Subscribing to push…');
   const subscription = await reg.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
   });
+  onStep('Subscribed. Saving to server…');
 
   await adminApi.subscribePush(subscription.toJSON());
+  onStep('Saved. Enabled.');
   return subscription;
 }
 

@@ -119,12 +119,17 @@ async function refreshPushButtons() {
 function wirePushControls() {
   $('pushEnableBtn').addEventListener('click', async () => {
     const status = $('pushStatus');
-    status.textContent = 'Enabling…';
+    const log = [];
+    const onStep = (msg) => {
+      log.push(msg);
+      status.textContent = log.join(' → ');
+    };
+    onStep('Enabling…');
     try {
-      await enablePush();
+      await enablePush(onStep);
       await refreshPushButtons();
     } catch (err) {
-      status.textContent = err.message;
+      status.textContent = `${log.join(' → ')} — FAILED: ${err.message}`;
     }
   });
 
@@ -134,6 +139,23 @@ function wirePushControls() {
     try {
       await disablePush();
       await refreshPushButtons();
+    } catch (err) {
+      status.textContent = err.message;
+    }
+  });
+
+  $('pushTestBtn').addEventListener('click', async () => {
+    const status = $('pushTestStatus');
+    status.textContent = 'Sending…';
+    try {
+      const { results } = await adminApi.testPush();
+      if (!results.length) {
+        status.textContent = 'No devices are subscribed yet — enable notifications above first.';
+        return;
+      }
+      status.textContent = results
+        .map((r) => (r.ok ? `✅ sent (HTTP ${r.status})` : `❌ HTTP ${r.status}${r.error ? ` — ${r.error}` : ''}${r.body ? ` — ${r.body}` : ''}`))
+        .join(' | ');
     } catch (err) {
       status.textContent = err.message;
     }

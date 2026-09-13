@@ -66,7 +66,7 @@ interface PushSubscriptionRow {
   endpoint: string;
 }
 
-async function sendPush(env: Env, endpoint: string): Promise<{ ok: boolean; expired: boolean }> {
+async function sendPush(env: Env, endpoint: string): Promise<{ ok: boolean; expired: boolean; status: number; body: string }> {
   const audience = new URL(endpoint).origin;
   const authorization = await vapidAuthHeader(env, audience);
   const res = await fetch(endpoint, {
@@ -76,7 +76,8 @@ async function sendPush(env: Env, endpoint: string): Promise<{ ok: boolean; expi
   // 404/410 means the browser dropped this subscription (e.g. uninstalled,
   // permission revoked) — the caller should delete the row so it stops
   // trying forever.
-  return { ok: res.ok, expired: res.status === 404 || res.status === 410 };
+  const body = await res.text().catch(() => '');
+  return { ok: res.ok, expired: res.status === 404 || res.status === 410, status: res.status, body };
 }
 
 // Best-effort fan-out to every admin device that's opted in. Never throws —
@@ -105,4 +106,31 @@ export async function notifyAdminsOfPendingPayment(env: Env): Promise<void> {
   } catch (err: any) {
     console.error('notifyAdminsOfPendingPayment failed:', err?.message);
   }
+}
+
+// Same send, but surfaces the actual per-subscription result instead of
+// swallowing it — for the admin panel's "Send test notification" button, so
+// a delivery failure is visible instead of a silent no-op.
+export async function sendTestPushToAdmins(
+  env: Env
+): Promise<Array<{ endpoint: string; ok: boolean; expired: boolean; status: number; body: string; error?: string }>> {
+  if (!env.VAPID_PRIVATE_KEY || !env.VAPID_PUBLIC_KEY) {
+    throw new Error('VAPID keys are not configured on the Worker.');
+  }
+
+  const db = serviceClient(env);
+  const { data: subs } = await db.from('admin_push_subscriptions').select('id, endpoint');
+  if (!subs?.length) return [];
+
+  return Promise.all(
+    (subs as PushSubscriptionRow[]).map(async (sub) => {
+      try {
+        const result = await sendPush(env, sub.endpoint);
+        if (result.expired) await db.from('admin_push_subscriptions').delete().eq('id', sub.id);
+        return { endpoint: sub.endpoint, ...result };
+      } catch (err: any) {
+        return { endpoint: sub.endpoint, ok: false, expired: false, status: 0, body: '', error: err?.message };
+      }
+    })
+  );
 }
