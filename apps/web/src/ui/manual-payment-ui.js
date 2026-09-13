@@ -3,6 +3,7 @@ import { billingApi } from '../billing/api.js';
 import { billing } from '../billing/entitlement.js';
 import { pollPaymentStatus } from '../billing/payment-status-poll.js';
 import { wireScreenshotInput } from './screenshot-input.js';
+import { gatePrintDocument } from '../registry/print-gate.js';
 
 // Fallback/launch-phase purchase path: the customer pays a UPI QR directly
 // and submits the reference number (+ optional screenshot) for manual admin
@@ -104,9 +105,18 @@ export async function showManualUpiModal(plan) {
         onApproved: async () => {
           overlay.querySelector('#manualUpiPendingSpinner').textContent = '✅';
           overlay.querySelector('#manualUpiPendingText').innerHTML =
-            'भुगतान सत्यापित ✅ — आपका plan सक्रिय हो गया है।<br/>Payment Verified ✅ — your plan is now active.';
+            'भुगतान सत्यापित ✅ — प्रिंटिंग शुरू हो रही है...<br/>Payment Verified ✅ — starting print...';
           await billing.refreshEntitlement();
-          setTimeout(() => overlay.remove(), 1800);
+          setTimeout(() => {
+            overlay.remove();
+            // This modal is opened from the pricing modal (see pricing-ui.js)
+            // which stays open underneath it — dismiss that too, then
+            // re-run the print gate so it picks up the entitlement/credit
+            // just granted and takes the user straight to the print dialog
+            // instead of leaving them to click Print again.
+            document.getElementById('pricingModal')?.remove();
+            if (window.__registryHooks) gatePrintDocument(window.__registryHooks);
+          }, 1200);
         },
         onRejected: (req) => {
           overlay.querySelector('#manualUpiPendingSpinner').textContent = '❌';

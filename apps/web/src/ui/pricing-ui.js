@@ -1,6 +1,7 @@
 import { billing } from '../billing/entitlement.js';
 import { startOneTimeCheckout, startSubscriptionCheckout } from '../billing/checkout.js';
 import { showManualUpiModal } from './manual-payment-ui.js';
+import { gatePrintDocument } from '../registry/print-gate.js';
 
 const RECOMMENDED_PLAN_ID = 'professional_annual';
 
@@ -77,7 +78,10 @@ export async function showPricingModal({ reason } = {}) {
           if (status === 'ACTIVE') {
             setStatus('सक्रिय! / Activated!');
             await billing.refreshEntitlement();
-            setTimeout(() => overlay.remove(), 1200);
+            setTimeout(() => {
+              overlay.remove();
+              if (window.__registryHooks) gatePrintDocument(window.__registryHooks);
+            }, 1200);
           } else {
             setStatus('सदस्यता सक्रिय नहीं हुई / Subscription did not activate. Try again.');
           }
@@ -87,7 +91,10 @@ export async function showPricingModal({ reason } = {}) {
           if (status === 'PAID') {
             setStatus('सफल! / Success!');
             await billing.refreshEntitlement();
-            setTimeout(() => overlay.remove(), 1200);
+            setTimeout(() => {
+              overlay.remove();
+              if (window.__registryHooks) gatePrintDocument(window.__registryHooks);
+            }, 1200);
           } else {
             setStatus('Payment पूरा नहीं हुआ / Payment did not complete. Try again.');
           }
