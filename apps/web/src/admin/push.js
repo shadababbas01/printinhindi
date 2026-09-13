@@ -66,9 +66,15 @@ export async function enablePush(onStep = () => {}) {
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(import.meta.env.VITE_VAPID_PUBLIC_KEY),
   });
+  const json = subscription.toJSON();
+  if (!json.keys?.p256dh || !json.keys?.auth) {
+    // Seen on some WebKit versions: subscribe() resolves but toJSON() comes
+    // back without the encryption keys — there's nothing usable to save.
+    throw new Error(`Subscription is missing encryption keys (got: ${JSON.stringify(json)}).`);
+  }
   onStep('Subscribed. Saving to server…');
 
-  await adminApi.subscribePush(subscription.toJSON());
+  await adminApi.subscribePush(json);
   onStep('Saved. Enabled.');
   return subscription;
 }

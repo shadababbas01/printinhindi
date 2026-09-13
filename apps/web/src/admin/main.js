@@ -100,20 +100,38 @@ async function populatePlanSelect() {
   }
 }
 
-async function refreshPushButtons() {
+async function refreshPushButtons({ preserveStatus = false } = {}) {
   const enableBtn = $('pushEnableBtn');
   const disableBtn = $('pushDisableBtn');
   const status = $('pushStatus');
 
   if (!pushSupported()) {
     enableBtn.disabled = true;
-    status.textContent = 'Not supported in this browser — on iPhone, add to Home Screen first (see above).';
+    if (!preserveStatus) status.textContent = 'Not supported in this browser — on iPhone, add to Home Screen first (see above).';
     return;
   }
   const existing = await getExistingPushSubscription();
   enableBtn.classList.toggle('hidden', !!existing);
   disableBtn.classList.toggle('hidden', !existing);
-  status.textContent = existing ? 'Enabled on this device.' : '';
+  if (!preserveStatus) status.textContent = existing ? 'Enabled on this device.' : '';
+}
+
+// Formats any thrown value into something guaranteed non-empty. DOMException
+// (what pushManager.subscribe() rejects with on WebKit) can have an EMPTY
+// .message, so `err.message` alone can render as a blank-looking status that
+// reads as "nothing happened" instead of the real failure it is.
+function describeError(err) {
+  const name = err?.name && err.name !== 'Error' ? err.name : null;
+  const message = err?.message || '';
+  if (name && message) return `${name}: ${message}`;
+  return name || message || String(err);
+}
+
+function formatTestResults(results) {
+  if (!results.length) return 'No devices are subscribed yet.';
+  return results
+    .map((r) => (r.ok ? `✅ delivered (HTTP ${r.status})` : `❌ HTTP ${r.status}${r.error ? ` — ${r.error}` : ''}${r.body ? ` — ${r.body}` : ''}`))
+    .join(' | ');
 }
 
 function wirePushControls() {
@@ -127,9 +145,16 @@ function wirePushControls() {
     onStep('Enabling…');
     try {
       await enablePush(onStep);
-      await refreshPushButtons();
+      await refreshPushButtons({ preserveStatus: true });
+      // Immediately prove the subscription actually landed and can receive a
+      // real push — rather than trusting the client-side "subscribed"
+      // state, which can be true even when the save to the server silently
+      // didn't stick.
+      onStep('Verifying with a real test push…');
+      const { results } = await adminApi.testPush();
+      onStep(formatTestResults(results));
     } catch (err) {
-      status.textContent = `${log.join(' → ')} — FAILED: ${err.message}`;
+      onStep(`FAILED: ${describeError(err)}`);
     }
   });
 
@@ -140,7 +165,7 @@ function wirePushControls() {
       await disablePush();
       await refreshPushButtons();
     } catch (err) {
-      status.textContent = err.message;
+      status.textContent = describeError(err);
     }
   });
 
@@ -149,15 +174,9 @@ function wirePushControls() {
     status.textContent = 'Sending…';
     try {
       const { results } = await adminApi.testPush();
-      if (!results.length) {
-        status.textContent = 'No devices are subscribed yet — enable notifications above first.';
-        return;
-      }
-      status.textContent = results
-        .map((r) => (r.ok ? `✅ sent (HTTP ${r.status})` : `❌ HTTP ${r.status}${r.error ? ` — ${r.error}` : ''}${r.body ? ` — ${r.body}` : ''}`))
-        .join(' | ');
+      status.textContent = formatTestResults(results);
     } catch (err) {
-      status.textContent = err.message;
+      status.textContent = describeError(err);
     }
   });
 
