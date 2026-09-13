@@ -58,8 +58,8 @@ export const auth = {
   // future login can use signInWithPassword() below — no more email
   // dependency at all. Requires "Confirm email" to stay enabled in Supabase
   // Auth settings; if it's off, the account is usable immediately.
-  async signUpWithPassword(email, password) {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+  async signUpWithPassword(email, password, redirectTo = window.location.href) {
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
     if (error) throw error;
     return data;
   },

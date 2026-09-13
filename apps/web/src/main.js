@@ -4,6 +4,7 @@
 import { auth } from './auth/session.js';
 import { gatePrintDocument, setCurrentDocumentSessionKey } from './registry/print-gate.js';
 import { mountAccountWidget } from './ui/account-widget.js';
+import { showEmailVerifiedBannerIfApplicable } from './ui/email-verified-banner.js';
 
 auth.init().then(() => {
   window.__registryHooks.onNewDocumentLoaded = () => setCurrentDocumentSessionKey();
@@ -13,4 +14,5 @@ auth.init().then(() => {
   });
 
   mountAccountWidget(document.getElementById('accountWidget'));
+  showEmailVerifiedBannerIfApplicable(auth.user);
 });
