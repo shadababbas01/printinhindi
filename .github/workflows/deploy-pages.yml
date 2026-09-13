@@ -28,12 +28,13 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        # Not `npm ci` — the committed package-lock.json was generated on
-        # macOS and npm's optional-dependency resolution (npm/cli#4828) then
-        # skips the Linux-only @rollup/rollup-linux-x64-gnu binary that Vite
-        # needs on this runner. `npm install` re-resolves optional deps for
-        # the current platform instead of trusting the lockfile's snapshot.
-        run: npm install
+        # Neither `npm ci` nor a plain `npm install` is enough here — the
+        # committed package-lock.json itself was generated on macOS and
+        # simply doesn't list the Linux-only @rollup/rollup-linux-x64-gnu
+        # optional dependency (npm/cli#4828), so npm never even tries to
+        # fetch it on this Ubuntu runner unless the lockfile is dropped and
+        # dependencies are re-resolved from scratch for this platform.
+        run: rm -f package-lock.json && npm install
 
       - name: Build
         working-directory: apps/web
