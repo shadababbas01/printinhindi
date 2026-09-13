@@ -9,6 +9,31 @@ import { resolve } from 'node:path';
 // (local dev, Cloudflare Pages, a future custom domain) stays at root.
 const base = process.env.GITHUB_PAGES === 'true' ? '/printinhindi/' : '/';
 
+// vite-plugin-pwa injects its <link rel="manifest"> + register-SW <script>
+// into every HTML entry point, not just index.html — and it does this via
+// its own late generateBundle hook (after transformIndexHtml has already
+// run), so stripping it from transformIndexHtml is too early: the tags
+// don't exist yet at that point. On iOS 16.4+, "Add to Home Screen" reads
+// that manifest's start_url ('.', which resolves against the manifest's OWN
+// location — the site root) instead of the page you were actually on, so
+// saving admin.html to the Home Screen silently opened the main app
+// instead. Only index.html is meant to be the installable PWA; strip the
+// injected tags back out of every other page's final HTML output.
+function stripPwaFromSecondaryPages() {
+  return {
+    name: 'strip-pwa-injection-from-secondary-pages',
+    enforce: 'post',
+    generateBundle(_options, bundle) {
+      for (const [fileName, asset] of Object.entries(bundle)) {
+        if (!fileName.endsWith('.html') || fileName === 'index.html' || asset.type !== 'asset') continue;
+        asset.source = String(asset.source)
+          .replace(/<link rel="manifest"[^>]*>/, '')
+          .replace(/<script id="vite-plugin-pwa:register-sw"[^>]*><\/script>/, '');
+      }
+    },
+  };
+}
+
 export default defineConfig({
   base,
   build: {
@@ -61,5 +86,6 @@ export default defineConfig({
         ],
       },
     }),
+    stripPwaFromSecondaryPages(),
   ],
 });
