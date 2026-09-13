@@ -213,6 +213,48 @@ async function boot() {
   const forbidden = $('adminForbidden');
   const app = $('adminApp');
   const whoAmI = $('adminWhoAmI');
+  const logoutBtn = $('adminLogoutBtn');
+
+  logoutBtn.addEventListener('click', async () => {
+    await auth.logout();
+  });
+
+  // --- Auth tabs: ID/Password (default) vs. Email link ---
+  const tabPassword = $('adminAuthTabPassword');
+  const tabLink = $('adminAuthTabLink');
+  const passwordPanel = $('adminAuthPasswordPanel');
+  const linkPanel = $('adminAuthLinkPanel');
+  function setAuthTab(mode) {
+    tabPassword.className = `btn ${mode === 'password' ? 'btn-primary' : 'btn-secondary'} flex-1`;
+    tabLink.className = `btn ${mode === 'link' ? 'btn-primary' : 'btn-secondary'} flex-1`;
+    passwordPanel.classList.toggle('hidden', mode !== 'password');
+    linkPanel.classList.toggle('hidden', mode !== 'link');
+    $('adminLoginStatus').textContent = '';
+  }
+  tabPassword.addEventListener('click', () => setAuthTab('password'));
+  tabLink.addEventListener('click', () => setAuthTab('link'));
+
+  // --- ID/Password: log in only. Admin accounts are provisioned by adding
+  // the email to ADMIN_EMAIL_ALLOWLIST, not by self-signup — the "Sign up"
+  // option that exists on the main app's login modal is intentionally
+  // omitted here.
+  const pwSubmitBtn = $('adminPwSubmitBtn');
+
+  pwSubmitBtn.addEventListener('click', async () => {
+    const email = $('adminPwEmail').value.trim();
+    const password = $('adminPwPassword').value;
+    const statusEl = $('adminLoginStatus');
+    if (!email || !password) {
+      statusEl.textContent = 'Enter email and password.';
+      return;
+    }
+    try {
+      await auth.signInWithPassword(email, password);
+      statusEl.textContent = '';
+    } catch (err) {
+      statusEl.textContent = err.message;
+    }
+  });
 
   $('adminLoginSendBtn').addEventListener('click', async () => {
     const email = $('adminLoginEmail').value.trim();
@@ -241,11 +283,11 @@ async function boot() {
   });
 
   // onAuthStateChange (which onChange wraps) also fires on token refresh, not
-  // just sign-in — only re-render on an actual logged-out→logged-in
-  // transition, so a routine refresh doesn't re-run render()/wireForms().
+  // just sign-in — only re-render on an actual sign-in/sign-out transition,
+  // so a routine refresh doesn't re-run render()/wireForms().
   let wasAuthenticated = !!auth.user;
   auth.onChange((state) => {
-    if (state.user && !wasAuthenticated) render();
+    if (!!state.user !== wasAuthenticated) render();
     wasAuthenticated = !!state.user;
   });
 
@@ -255,9 +297,12 @@ async function boot() {
       loginGate.classList.remove('hidden');
       forbidden.classList.add('hidden');
       app.classList.add('hidden');
+      logoutBtn.classList.add('hidden');
+      whoAmI.textContent = '';
       return;
     }
     whoAmI.textContent = user.email || '';
+    logoutBtn.classList.remove('hidden');
 
     // Probe admin access with a cheap authenticated call — the server enforces
     // ADMIN_EMAIL_ALLOWLIST on every /admin/* route regardless of what this

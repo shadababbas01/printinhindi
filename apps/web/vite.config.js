@@ -2,7 +2,15 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'node:path';
 
+// GitHub Pages serves a project (non-custom-domain) site under
+// /<repo-name>/, not the domain root — every asset/HTML reference needs
+// that prefix or the deployed page loads a blank white screen. Only the
+// GitHub Pages CI workflow sets GITHUB_PAGES=true; every other build
+// (local dev, Cloudflare Pages, a future custom domain) stays at root.
+const base = process.env.GITHUB_PAGES === 'true' ? '/printinhindi/' : '/';
+
 export default defineConfig({
+  base,
   build: {
     rollupOptions: {
       input: {
@@ -27,12 +35,15 @@ export default defineConfig({
         theme_color: '#4f46e5',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/',
+        // Relative, not absolute — works whether the app is served from the
+        // domain root or a GitHub Pages subpath like /printinhindi/.
+        start_url: '.',
+        scope: '.',
         icons: [
           // TODO: replace with real 192/512 PNG icons before production build —
           // these are placeholders so the manifest validates during local dev.
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
         ],
       },
       workbox: {

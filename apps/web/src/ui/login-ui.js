@@ -1,13 +1,17 @@
 import { auth } from '../auth/session.js';
 
-// Login modal with two paths:
-//  - Email: a sign-in LINK (click it, no code to type). auth.onChange()
+// Login modal with three paths:
+//  - Email link: a sign-in LINK (click it, no code to type). auth.onChange()
 //    picks it up automatically same-device (same-tab redirect, or cross-tab
 //    storage sync) — but a link opened on a different device/browser has no
 //    shared storage to sync from, so an explicit "I've signed in — Continue"
 //    button re-checks the session on demand as a manual fallback.
 //  - Mobile: a typed OTP CODE over SMS, for when email delivery is down/slow
 //    (phone auth has no clickable-link option in Supabase).
+//  - Password: create an id/password once (one confirmation email, same as
+//    any signup), then log in with just email+password forever after — no
+//    further email/SMS round-trip, so it isn't subject to the auth email
+//    provider's rate limit the way the link/OTP paths are.
 // Reuses the host app's existing `.modal-overlay` / `.modal-box` / `.btn`
 // classes so it matches visually once mounted into the real page.
 export function showLoginModal({ onSuccess } = {}) {
@@ -21,11 +25,32 @@ export function showLoginModal({ onSuccess } = {}) {
     <div class="modal-box text-sm">
       <h2 class="font-bold mb-3">लॉगिन करें / Login</h2>
       <div class="flex gap-2 mb-3">
-        <button id="authTabEmail" class="btn btn-primary flex-1" type="button">ईमेल / Email</button>
+        <button id="authTabPassword" class="btn btn-primary flex-1" type="button">आईडी/पासवर्ड / ID &amp; Password</button>
+        <button id="authTabEmail" class="btn btn-secondary flex-1" type="button">ईमेल लिंक / Email link</button>
         <button id="authTabPhone" class="btn btn-secondary flex-1" type="button">मोबाइल / Mobile</button>
       </div>
 
-      <div id="authEmailPanel">
+      <div id="authPasswordPanel">
+        <div class="flex gap-2 mb-3">
+          <button id="authPwModeLogin" class="btn btn-primary flex-1" type="button">लॉगिन / Log in</button>
+          <button id="authPwModeSignup" class="btn btn-secondary flex-1" type="button">नया खाता / Sign up</button>
+        </div>
+        <label class="field-label block mb-1">ईमेल / Email</label>
+        <input id="authPwEmail" type="email" class="field-input mb-3" placeholder="you@example.com" />
+        <label class="field-label block mb-1">पासवर्ड / Password</label>
+        <input id="authPwPassword" type="password" class="field-input mb-3" placeholder="••••••••" />
+        <div id="authPwConfirmWrap" class="hidden">
+          <label class="field-label block mb-1">पासवर्ड दोबारा लिखें / Confirm password</label>
+          <input id="authPwConfirm" type="password" class="field-input mb-3" placeholder="••••••••" />
+        </div>
+        <button id="authPwSubmitBtn" class="btn btn-primary w-full">लॉगिन करें / Log in</button>
+        <p id="authPwSignupNotice" class="text-xs text-gray-500 mt-2 hidden">
+          खाता बन गया — पुष्टि के लिए एक बार अपना ईमेल जाँचें, फिर हमेशा इसी आईडी/पासवर्ड से लॉगिन करें।<br/>
+          Account created — check your email once to confirm it, then log in with this id/password from now on.
+        </p>
+      </div>
+
+      <div id="authEmailPanel" class="hidden">
         <div id="authEmailStep1">
           <label class="field-label block mb-1">ईमेल / Email</label>
           <input id="authEmailInput" type="email" class="field-input mb-3" placeholder="you@example.com" />
@@ -82,21 +107,78 @@ export function showLoginModal({ onSuccess } = {}) {
     onSuccess?.();
   };
 
+  const tabPassword = overlay.querySelector('#authTabPassword');
   const tabEmail = overlay.querySelector('#authTabEmail');
   const tabPhone = overlay.querySelector('#authTabPhone');
+  const passwordPanel = overlay.querySelector('#authPasswordPanel');
   const emailPanel = overlay.querySelector('#authEmailPanel');
   const phonePanel = overlay.querySelector('#authPhonePanel');
 
   function setMode(mode) {
-    const isEmail = mode === 'email';
-    tabEmail.className = `btn ${isEmail ? 'btn-primary' : 'btn-secondary'} flex-1`;
-    tabPhone.className = `btn ${!isEmail ? 'btn-primary' : 'btn-secondary'} flex-1`;
-    emailPanel.classList.toggle('hidden', !isEmail);
-    phonePanel.classList.toggle('hidden', isEmail);
+    tabPassword.className = `btn ${mode === 'password' ? 'btn-primary' : 'btn-secondary'} flex-1`;
+    tabEmail.className = `btn ${mode === 'email' ? 'btn-primary' : 'btn-secondary'} flex-1`;
+    tabPhone.className = `btn ${mode === 'phone' ? 'btn-primary' : 'btn-secondary'} flex-1`;
+    passwordPanel.classList.toggle('hidden', mode !== 'password');
+    emailPanel.classList.toggle('hidden', mode !== 'email');
+    phonePanel.classList.toggle('hidden', mode !== 'phone');
     errorBox.classList.add('hidden');
   }
+  tabPassword.addEventListener('click', () => setMode('password'));
   tabEmail.addEventListener('click', () => setMode('email'));
   tabPhone.addEventListener('click', () => setMode('phone'));
+
+  // --- Password: log in or create an account ---
+  const pwModeLoginBtn = overlay.querySelector('#authPwModeLogin');
+  const pwModeSignupBtn = overlay.querySelector('#authPwModeSignup');
+  const pwConfirmWrap = overlay.querySelector('#authPwConfirmWrap');
+  const pwSubmitBtn = overlay.querySelector('#authPwSubmitBtn');
+  const pwSignupNotice = overlay.querySelector('#authPwSignupNotice');
+  let pwIsSignup = false;
+
+  function setPwMode(isSignup) {
+    pwIsSignup = isSignup;
+    pwModeLoginBtn.className = `btn ${!isSignup ? 'btn-primary' : 'btn-secondary'} flex-1`;
+    pwModeSignupBtn.className = `btn ${isSignup ? 'btn-primary' : 'btn-secondary'} flex-1`;
+    pwConfirmWrap.classList.toggle('hidden', !isSignup);
+    pwSubmitBtn.textContent = isSignup ? 'खाता बनाएँ / Create account' : 'लॉगिन करें / Log in';
+    pwSignupNotice.classList.add('hidden');
+    errorBox.classList.add('hidden');
+  }
+  pwModeLoginBtn.addEventListener('click', () => setPwMode(false));
+  pwModeSignupBtn.addEventListener('click', () => setPwMode(true));
+
+  pwSubmitBtn.addEventListener('click', async () => {
+    const email = overlay.querySelector('#authPwEmail').value.trim();
+    const password = overlay.querySelector('#authPwPassword').value;
+    if (!email || !password) return showError('कृपया ईमेल और पासवर्ड दर्ज करें / Enter email and password');
+
+    if (pwIsSignup) {
+      const confirm = overlay.querySelector('#authPwConfirm').value;
+      if (password !== confirm) return showError('पासवर्ड मेल नहीं खाते / Passwords do not match');
+      if (password.length < 6) return showError('पासवर्ड कम से कम 6 अक्षरों का हो / Password must be at least 6 characters');
+      try {
+        const result = await auth.signUpWithPassword(email, password);
+        if (result.session) {
+          // "Confirm email" is off in this project's Auth settings — signup
+          // itself returns a session, so there's nothing left to wait on.
+          succeed();
+        } else {
+          pwSignupNotice.classList.remove('hidden');
+          errorBox.classList.add('hidden');
+        }
+      } catch (err) {
+        showError(err.message || 'खाता बनाने में त्रुटि / Failed to create account');
+      }
+      return;
+    }
+
+    try {
+      await auth.signInWithPassword(email, password);
+      succeed();
+    } catch (err) {
+      showError(err.message || 'गलत ईमेल/पासवर्ड / Incorrect email or password');
+    }
+  });
 
   // --- Email: sign-in link ---
   const sendLink = async () => {
@@ -167,6 +249,9 @@ export function showLoginModal({ onSuccess } = {}) {
   const stopWatching = auth.onChange((state) => {
     if (state.user) succeed();
   });
+
+  setPwMode(false);
+  setMode('password');
 
   overlay.querySelector('#authCloseBtn').addEventListener('click', () => {
     stopWatching();

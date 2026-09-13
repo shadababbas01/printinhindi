@@ -53,6 +53,29 @@ export const auth = {
     if (error) throw error;
   },
 
+  // Creates the account and sends Supabase's one-time email confirmation link.
+  // After the user clicks that link once, the account is confirmed and every
+  // future login can use signInWithPassword() below — no more email
+  // dependency at all. Requires "Confirm email" to stay enabled in Supabase
+  // Auth settings; if it's off, the account is usable immediately.
+  async signUpWithPassword(email, password) {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) throw error;
+    return data;
+  },
+
+  // Ordinary password login — works the moment the account is confirmed,
+  // with no email/SMS round-trip and no rate limit tied to the auth email
+  // provider.
+  async signInWithPassword(email, password) {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    this.session = data.session;
+    this.user = data.session?.user ?? null;
+    this._notify();
+    return data;
+  },
+
   // Fallback path for when email delivery is down/slow — a typed OTP code
   // over SMS (phone auth has no clickable-link option). Requires an SMS
   // provider (Twilio/MessageBird/Vonage/etc.)

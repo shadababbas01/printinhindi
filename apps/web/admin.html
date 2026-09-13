@@ -29,16 +29,35 @@
   <div class="max-w-5xl mx-auto p-6 space-y-6">
     <header class="flex items-center justify-between">
       <h1 class="text-xl font-bold">Admin — Hindi Registry Print Tool</h1>
-      <div id="adminWhoAmI" class="text-xs text-gray-500"></div>
+      <div class="flex items-center gap-2">
+        <div id="adminWhoAmI" class="text-xs text-gray-500"></div>
+        <button id="adminLogoutBtn" class="btn btn-secondary hidden">Logout</button>
+      </div>
     </header>
 
     <div id="adminLoginGate" class="panel-section">
-      <p class="text-sm mb-3">Sign in with your admin account to continue.</p>
-      <div class="flex gap-2 max-w-sm">
-        <input id="adminLoginEmail" type="email" class="field-input" placeholder="you@example.com" />
-        <button id="adminLoginSendBtn" class="btn btn-primary">Send sign-in link</button>
+      <div class="flex gap-2 mb-3 max-w-sm">
+        <button id="adminAuthTabPassword" class="btn btn-primary flex-1">ID &amp; Password</button>
+        <button id="adminAuthTabLink" class="btn btn-secondary flex-1">Email link</button>
       </div>
-      <button id="adminLoginContinueBtn" class="btn btn-secondary mt-2 hidden">I've signed in — Continue</button>
+
+      <div id="adminAuthPasswordPanel">
+        <div class="grid gap-2 max-w-sm">
+          <input id="adminPwEmail" type="email" class="field-input" placeholder="you@example.com" />
+          <input id="adminPwPassword" type="password" class="field-input" placeholder="Password" />
+        </div>
+        <button id="adminPwSubmitBtn" class="btn btn-primary mt-2">Log in</button>
+      </div>
+
+      <div id="adminAuthLinkPanel" class="hidden">
+        <p class="text-sm mb-3">Sign in with your admin account to continue.</p>
+        <div class="flex gap-2 max-w-sm">
+          <input id="adminLoginEmail" type="email" class="field-input" placeholder="you@example.com" />
+          <button id="adminLoginSendBtn" class="btn btn-primary">Send sign-in link</button>
+        </div>
+        <button id="adminLoginContinueBtn" class="btn btn-secondary mt-2 hidden">I've signed in — Continue</button>
+      </div>
+
       <p id="adminLoginStatus" class="text-xs text-gray-500 mt-2"></p>
     </div>
 
