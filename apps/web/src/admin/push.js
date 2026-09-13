@@ -21,6 +21,33 @@ export function pushSupported() {
   );
 }
 
+// `navigator.serviceWorker.ready` resolves for the registration that would
+// control the CURRENT page (admin.html, scope '.../'), not necessarily our
+// narrower '.../admin-push/' registration — awaiting it here was waiting on
+// the wrong worker entirely, which is exactly how "Registering service
+// worker…" could hang forever. Wait on THIS registration's own worker
+// instead, with a hard timeout so it can never hang silently.
+function waitForActive(reg, timeoutMs = 8000) {
+  if (reg.active) return Promise.resolve(reg.active);
+  const worker = reg.installing || reg.waiting;
+  if (!worker) return Promise.reject(new Error('Registration has no installing/waiting/active worker.'));
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(
+      () => reject(new Error(`Timed out after ${timeoutMs}ms waiting for the service worker to activate (state: ${worker.state}).`)),
+      timeoutMs
+    );
+    worker.addEventListener('statechange', () => {
+      if (worker.state === 'activated') {
+        clearTimeout(timer);
+        resolve(worker);
+      } else if (worker.state === 'redundant') {
+        clearTimeout(timer);
+        reject(new Error('Service worker became redundant before activating.'));
+      }
+    });
+  });
+}
+
 export async function getExistingPushSubscription() {
   if (!pushSupported()) return null;
   const reg = await navigator.serviceWorker.getRegistration(SW_SCOPE);
@@ -58,8 +85,9 @@ export async function enablePush(onStep = () => {}) {
 
   onStep('Registering service worker…');
   const reg = await navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE });
-  await navigator.serviceWorker.ready;
-  onStep('Service worker ready.');
+  onStep(`Registered (state: ${(reg.installing || reg.waiting || reg.active)?.state ?? 'unknown'}). Waiting for it to activate…`);
+  await waitForActive(reg);
+  onStep('Service worker active.');
 
   onStep('Subscribing to push…');
   const subscription = await reg.pushManager.subscribe({

@@ -6,6 +6,19 @@
 // apps/worker/src/services/push.ts) — there's no payload to read, so the
 // notification text is fixed and the admin opens the panel to see what's
 // actually pending.
+
+// Activate immediately instead of sitting in "installed/waiting" until the
+// next full page load — without this, navigator.serviceWorker.ready (which
+// only resolves once a worker is ACTIVE) can hang indefinitely on a fresh
+// registration, which is exactly the symptom of getting stuck on
+// "Registering service worker…" and never reaching "Subscribing to push…".
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification('नया भुगतान अनुरोध / New payment request', {
