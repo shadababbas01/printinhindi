@@ -251,6 +251,47 @@ export async function handleAdminGetUnlockHistory(env: Env, request: Request, us
   return json({ unlocks: unlocks ?? [] });
 }
 
+// Web Push subscription for an admin's own device (e.g. an iPhone with the
+// admin panel added to Home Screen) — so a new pending payment request can
+// wake it up with a real OS notification instead of relying on the admin
+// having the tab open. One row per browser subscription (endpoint is unique
+// per install), not per admin account.
+export async function handleAdminPushSubscribe(env: Env, request: Request): Promise<Response> {
+  const admin = await requireAdmin(env, request);
+  if (isResponse(admin)) return admin;
+
+  const body = (await request.json().catch(() => null)) as {
+    subscription?: { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
+  } | null;
+  const sub = body?.subscription;
+  if (!sub?.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) return json({ error: 'INVALID_BODY' }, 400);
+
+  const db = serviceClient(env);
+  const { error } = await db.from('admin_push_subscriptions').upsert(
+    {
+      endpoint: sub.endpoint,
+      p256dh: sub.keys.p256dh,
+      auth: sub.keys.auth,
+      admin_email: admin.email,
+    },
+    { onConflict: 'endpoint' }
+  );
+  if (error) return json({ error: 'SUBSCRIBE_FAILED' }, 500);
+  return json({ ok: true });
+}
+
+export async function handleAdminPushUnsubscribe(env: Env, request: Request): Promise<Response> {
+  const admin = await requireAdmin(env, request);
+  if (isResponse(admin)) return admin;
+
+  const body = (await request.json().catch(() => null)) as { endpoint?: string } | null;
+  if (!body?.endpoint) return json({ error: 'INVALID_BODY' }, 400);
+
+  const db = serviceClient(env);
+  await db.from('admin_push_subscriptions').delete().eq('endpoint', body.endpoint);
+  return json({ ok: true });
+}
+
 export async function handleAdminRevokeDevice(env: Env, request: Request, deviceId: string): Promise<Response> {
   const admin = await requireAdmin(env, request);
   if (isResponse(admin)) return admin;

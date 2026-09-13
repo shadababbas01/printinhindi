@@ -39,4 +39,9 @@ export const adminApi = {
   revokeDevice: (deviceId) => apiFetch(`/api/v1/admin/devices/${deviceId}/revoke`, { method: 'POST' }),
 
   getUnlockHistory: (userId) => apiFetch(`/api/v1/admin/unlocks/${userId}`),
+
+  subscribePush: (subscription) =>
+    apiFetch('/api/v1/admin/push/subscribe', { method: 'POST', body: JSON.stringify({ subscription }) }),
+  unsubscribePush: (endpoint) =>
+    apiFetch('/api/v1/admin/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) }),
 };

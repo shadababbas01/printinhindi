@@ -10,12 +10,18 @@ CASHFREE_API_VERSION = "2026-01-01"
 APP_BASE_URL = "https://shadababbas01.github.io/printinhindi"
 CORS_ALLOWED_ORIGIN = "https://shadababbas01.github.io"
 ADMIN_EMAIL_ALLOWLIST = "shadababbas.25@gmail.com"
+# Public half of the admin push-notification VAPID keypair — safe to be a
+# plain var (it's also baked into the admin frontend build as
+# VITE_VAPID_PUBLIC_KEY). Generated once via `npx web-push generate-vapid-keys`.
+VAPID_PUBLIC_KEY = "BOeZOiMJDUSbtuoHUdXBmZHdwfOis8mgAKzVaxDJhEPR-utKQ9x9kvw9qrjSQCjgFnnM5Hf7tzI8Yh9LaAx7Rd4"
+VAPID_SUBJECT = "mailto:shadababbas.25@gmail.com"
 
 # Secrets (set via `wrangler secret put NAME`, one per line, never in this file):
 #   SUPABASE_URL
 #   SUPABASE_SERVICE_ROLE_KEY
 #   CASHFREE_CLIENT_ID
 #   CASHFREE_CLIENT_SECRET
+#   VAPID_PRIVATE_KEY
 
 [env.production]
 vars = { CASHFREE_ENV = "production", APP_BASE_URL = "https://app.<domain>.in", CORS_ALLOWED_ORIGIN = "https://app.<domain>.in" }

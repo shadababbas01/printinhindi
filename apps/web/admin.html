@@ -71,6 +71,19 @@
 
     <main id="adminApp" class="space-y-6 hidden">
       <section class="panel-section">
+        <h2 class="font-bold mb-3">Push notifications (e.g. on your iPhone)</h2>
+        <p class="text-xs text-gray-500 mb-3">
+          On iPhone: add this page to your Home Screen first (Share &rarr; Add to Home Screen), open it from
+          there, then tap Enable — iOS only delivers push notifications to installed home-screen web apps, not
+          a regular Safari tab. Once enabled, this device gets a notification the instant a new payment request
+          comes in, even if the panel isn't open.
+        </p>
+        <button id="pushEnableBtn" class="btn btn-primary">Enable notifications on this device</button>
+        <button id="pushDisableBtn" class="btn btn-secondary hidden">Disable notifications on this device</button>
+        <span id="pushStatus" class="text-xs text-gray-500 ml-2"></span>
+      </section>
+
+      <section class="panel-section">
         <div class="flex items-center justify-between mb-3">
           <h2 class="font-bold">Manual UPI payment requests</h2>
           <select id="manualPaymentsFilter" class="field-input" style="width:auto;">

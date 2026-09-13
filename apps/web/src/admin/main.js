@@ -1,5 +1,6 @@
 import { auth } from '../auth/session.js';
 import { adminApi } from './api.js';
+import { pushSupported, getExistingPushSubscription, enablePush, disablePush } from './push.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -99,8 +100,51 @@ async function populatePlanSelect() {
   }
 }
 
+async function refreshPushButtons() {
+  const enableBtn = $('pushEnableBtn');
+  const disableBtn = $('pushDisableBtn');
+  const status = $('pushStatus');
+
+  if (!pushSupported()) {
+    enableBtn.disabled = true;
+    status.textContent = 'Not supported in this browser — on iPhone, add to Home Screen first (see above).';
+    return;
+  }
+  const existing = await getExistingPushSubscription();
+  enableBtn.classList.toggle('hidden', !!existing);
+  disableBtn.classList.toggle('hidden', !existing);
+  status.textContent = existing ? 'Enabled on this device.' : '';
+}
+
+function wirePushControls() {
+  $('pushEnableBtn').addEventListener('click', async () => {
+    const status = $('pushStatus');
+    status.textContent = 'Enabling…';
+    try {
+      await enablePush();
+      await refreshPushButtons();
+    } catch (err) {
+      status.textContent = err.message;
+    }
+  });
+
+  $('pushDisableBtn').addEventListener('click', async () => {
+    const status = $('pushStatus');
+    status.textContent = 'Disabling…';
+    try {
+      await disablePush();
+      await refreshPushButtons();
+    } catch (err) {
+      status.textContent = err.message;
+    }
+  });
+
+  refreshPushButtons();
+}
+
 function wireForms() {
   $('manualPaymentsFilter').addEventListener('change', loadManualPayments);
+  wirePushControls();
 
   $('grantSubmitBtn').addEventListener('click', async () => {
     const userId = $('grantUserId').value.trim();

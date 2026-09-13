@@ -23,6 +23,8 @@ import {
   handleAdminRevokeDevice,
   handleAdminSearchUser,
   handleAdminGetUnlockHistory,
+  handleAdminPushSubscribe,
+  handleAdminPushUnsubscribe,
 } from './routes/admin';
 
 export interface Env {
@@ -35,6 +37,9 @@ export interface Env {
   APP_BASE_URL: string;
   CORS_ALLOWED_ORIGIN: string;
   ADMIN_EMAIL_ALLOWLIST: string;
+  VAPID_PUBLIC_KEY: string;
+  VAPID_PRIVATE_KEY: string;
+  VAPID_SUBJECT: string;
 }
 
 function withCors(res: Response, origin: string): Response {
@@ -130,6 +135,10 @@ export default {
       } else if (path.startsWith('/api/v1/admin/unlocks/') && request.method === 'GET') {
         const userId = path.split('/').pop()!;
         res = await handleAdminGetUnlockHistory(env, request, userId);
+      } else if (path === '/api/v1/admin/push/subscribe' && request.method === 'POST') {
+        res = await handleAdminPushSubscribe(env, request);
+      } else if (path === '/api/v1/admin/push/unsubscribe' && request.method === 'POST') {
+        res = await handleAdminPushUnsubscribe(env, request);
       } else {
         res = new Response(JSON.stringify({ error: 'NOT_FOUND' }), {
           status: 404,

@@ -1,6 +1,7 @@
 import type { Env } from '../index';
 import { requireUser, isResponse } from '../middleware/auth';
 import { serviceClient } from '../services/supabase';
+import { notifyAdminsOfPendingPayment } from '../services/push';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -57,6 +58,7 @@ export async function handleCreateManualPayment(env: Env, request: Request): Pro
     .single();
   if (error) return json({ error: 'REQUEST_RECORD_FAILED' }, 500);
 
+  await notifyAdminsOfPendingPayment(env);
   return json({ request: inserted });
 }
 
@@ -109,6 +111,7 @@ export async function handleCreatePagePayment(env: Env, request: Request): Promi
     .single();
   if (error) return json({ error: 'REQUEST_RECORD_FAILED' }, 500);
 
+  await notifyAdminsOfPendingPayment(env);
   return json({ request: inserted, amountPaise });
 }
 
