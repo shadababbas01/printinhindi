@@ -28,7 +28,12 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm ci
+        # Not `npm ci` — the committed package-lock.json was generated on
+        # macOS and npm's optional-dependency resolution (npm/cli#4828) then
+        # skips the Linux-only @rollup/rollup-linux-x64-gnu binary that Vite
+        # needs on this runner. `npm install` re-resolves optional deps for
+        # the current platform instead of trusting the lockfile's snapshot.
+        run: npm install
 
       - name: Build
         working-directory: apps/web
