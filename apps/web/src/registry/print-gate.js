@@ -9,6 +9,7 @@ import { getInstallationId } from '../billing/device.js';
 import { showLoginModal } from '../ui/login-ui.js';
 import { showPagePaymentModal } from '../ui/page-payment-ui.js';
 import { showDeviceLimitModal } from '../ui/device-limit-ui.js';
+import { showLoadingOverlay, hideLoadingOverlay } from '../ui/loading-overlay.js';
 
 // A random id for "this loaded document in this browser session" — NEVER
 // derived from the document's bytes, filename, or parsed content. Regenerate
@@ -57,38 +58,51 @@ export async function gatePrintDocument(hooks) {
   // printing entirely — any failure here (network, misconfigured
   // Supabase/Worker, etc.) falls through to the pay-per-page flow below
   // instead of throwing.
+  //
+  // Everything from here on involves at least one network round trip before
+  // the next screen (a modal, or the checklist) appears — show a loader for
+  // that whole gap so the tap gets immediate feedback instead of looking
+  // like it did nothing. Modal-launching calls are awaited (even though
+  // their result isn't used) specifically so the loader stays up until
+  // their DOM is actually on screen, not just until the async fetch inside
+  // them starts.
+  showLoadingOverlay('जांच हो रही है… / Checking…');
   try {
-    const entitlement = await billing.getEntitlement({ forceRefresh: true });
-
-    if (entitlement.currentDeviceAllowed === false) {
-      showDeviceLimitModal(entitlement);
-      return;
-    }
-
     try {
-      await billingApi.registerDevice(getInstallationId(), navigator.userAgent.slice(0, 60));
-    } catch (err) {
-      if (err.status === 409) {
-        showDeviceLimitModal(err.body);
+      const entitlement = await billing.getEntitlement({ forceRefresh: true });
+
+      if (entitlement.currentDeviceAllowed === false) {
+        await showDeviceLimitModal(entitlement);
         return;
       }
-      throw err;
+
+      try {
+        await billingApi.registerDevice(getInstallationId(), navigator.userAgent.slice(0, 60));
+      } catch (err) {
+        if (err.status === 409) {
+          await showDeviceLimitModal(err.body);
+          return;
+        }
+        throw err;
+      }
+
+      if (entitlement.unlimitedDocuments) {
+        hooks.openChecklistModal();
+        return;
+      }
+
+      const unlock = await billingApi.createUnlock(clientUnlockKey);
+      if (unlock.allowed) {
+        hooks.openChecklistModal();
+        return;
+      }
+    } catch {
+      // Backend unreachable/erroring, or no entitlement — either way, fall
+      // through to the pay-per-page flow.
     }
 
-    if (entitlement.unlimitedDocuments) {
-      hooks.openChecklistModal();
-      return;
-    }
-
-    const unlock = await billingApi.createUnlock(clientUnlockKey);
-    if (unlock.allowed) {
-      hooks.openChecklistModal();
-      return;
-    }
-  } catch {
-    // Backend unreachable/erroring, or no entitlement — either way, fall
-    // through to the pay-per-page flow.
+    await openPagePaymentModal();
+  } finally {
+    hideLoadingOverlay();
   }
-
-  openPagePaymentModal();
 }

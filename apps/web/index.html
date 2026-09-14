@@ -397,7 +397,7 @@
 
   /* ---- Print ---- */
   @media print {
-    @page { size: 8.5in 14in; margin: 0; } /* live-updated via CSSOM in JS to match the selected paper size */
+    @page { size: 210mm 297mm; margin: 0; } /* live-updated via CSSOM in JS to match the selected paper size */
     html, body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .no-print { display: none !important; }
     .preview-background, .page-shadow, .stamp-zone-overlay, .page-break-indicator { display: none !important; }
@@ -468,8 +468,8 @@
       <div>
         <label class="field-label block mb-1">पेपर आकार / Paper Size</label>
         <select id="paperSize" class="field-select">
+          <option value="a4" selected>A4 (210 × 297 mm)</option>
           <option value="legal">Legal (8.5 × 14 in)</option>
-          <option value="a4">A4 (210 × 297 mm)</option>
         </select>
       </div>
       <div>
@@ -546,7 +546,7 @@
 
     <div class="panel-section text-xs text-gray-500 !shadow-none !border-dashed">
       <p class="font-semibold mb-1 text-gray-700">🖨️ प्रिंट सेटिंग्स / Print Settings:</p>
-      <p>• Paper size: <span id="printSettingsPaperSize">Legal (8.5 × 14 in)</span> चुनें</p>
+      <p>• Paper size: <span id="printSettingsPaperSize">A4 (210 × 297 mm)</span> चुनें</p>
       <p>• Margins: None / कोई नहीं</p>
       <p>• Scale: 100% (Default / Actual Size)</p>
       <p>• Headers & Footers: OFF / बंद करें</p>
@@ -646,8 +646,8 @@
       <h2 class="font-bold text-[15px]">प्रिंट से पहले जांचें / Pre-Print Checklist</h2>
     </div>
     <div class="space-y-2.5 mb-4">
-      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1"><span id="checklistPaperLine1">प्रिंटर में Legal (8.5 × 14") स्टाम्प पेपर लगा है / Legal stamp paper loaded in printer</span></label>
-      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1"><span id="checklistPaperLine2">Paper Size: Legal (8.5 × 14 in) चुना है / Selected Legal paper size</span></label>
+      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1"><span id="checklistPaperLine1">प्रिंटर में A4 (210 × 297 mm) स्टाम्प पेपर लगा है / A4 stamp paper loaded in printer</span></label>
+      <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1"><span id="checklistPaperLine2">Paper Size: A4 (210 × 297 mm) चुना है / Selected A4 paper size</span></label>
       <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1">Margins: None (कोई नहीं) सेट है / Margins set to None</label>
       <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1">Scale: 100% सेट है / Scale at 100%</label>
       <label class="flex items-start gap-2.5 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"><input type="checkbox" class="checklist-item mt-1">Headers & Footers बंद हैं / Headers & Footers are OFF</label>
@@ -681,7 +681,7 @@
 (function(){
   const state = {
     page1Top: 105, page2Top: 20, leftMargin: 31.75, rightMargin: 19.05, bottomMargin: 20,
-    fontSize: 14, lineHeight: 1.8, paperSize: 'legal',
+    fontSize: 14, lineHeight: 1.8, paperSize: 'a4',
     htmlContent: null, fileName: null,
     fileQueue: [], queueIndex: -1, fullSize: false, editMode: false
   };
@@ -690,7 +690,7 @@
     legal: { wMM: 215.9, hMM: 355.6, cssSize: '8.5in 14in' },
     a4:    { wMM: 210,   hMM: 297,   cssSize: '210mm 297mm' }
   };
-  function currentPaper(){ return PAPER_SIZES[state.paperSize] || PAPER_SIZES.legal; }
+  function currentPaper(){ return PAPER_SIZES[state.paperSize] || PAPER_SIZES.a4; }
   function pageWidthPx(){ return currentPaper().wMM * 96 / 25.4; }
   function pageHeightPx(){ return currentPaper().hMM * 96 / 25.4; }
 
@@ -1975,8 +1975,8 @@
     document.getElementById('lineHeight').value = 1.8;
     document.getElementById('statePreset').value = 'custom';
     document.getElementById('fontEncoding').value = 'auto';
-    state.paperSize = 'legal';
-    document.getElementById('paperSize').value = 'legal';
+    state.paperSize = 'a4';
+    document.getElementById('paperSize').value = 'a4';
     applyPaperSizeCSS();
     document.documentElement.classList.remove('dark');
     document.getElementById('darkModeToggle').textContent = '🌙';

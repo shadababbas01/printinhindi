@@ -96,6 +96,28 @@ export function showLoginModal({ onSuccess } = {}) {
     errorBox.classList.remove('hidden');
   };
 
+  // Wraps a button's click handler so it's visibly busy (disabled + "…"
+  // appended) for the duration of the network call — every handler in this
+  // modal does at least one, and without this a tap gave no feedback until
+  // the request finished.
+  function withBusy(btn, handler) {
+    return async (...args) => {
+      const original = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = `${original} …`;
+      try {
+        await handler(...args);
+      } finally {
+        // If the modal is still around (didn't succeed()/close), restore
+        // the button; if it did, overlay is gone and this is a no-op.
+        if (document.body.contains(btn)) {
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      }
+    };
+  }
+
   // Both the phone-verify handler and the email-link onChange watcher can
   // resolve login — guard so onSuccess only ever fires once.
   let resolved = false;
@@ -147,7 +169,7 @@ export function showLoginModal({ onSuccess } = {}) {
   pwModeLoginBtn.addEventListener('click', () => setPwMode(false));
   pwModeSignupBtn.addEventListener('click', () => setPwMode(true));
 
-  pwSubmitBtn.addEventListener('click', async () => {
+  pwSubmitBtn.addEventListener('click', withBusy(pwSubmitBtn, async () => {
     const email = overlay.querySelector('#authPwEmail').value.trim();
     const password = overlay.querySelector('#authPwPassword').value;
     if (!email || !password) return showError('कृपया ईमेल और पासवर्ड दर्ज करें / Enter email and password');
@@ -178,7 +200,7 @@ export function showLoginModal({ onSuccess } = {}) {
     } catch (err) {
       showError(err.message || 'गलत ईमेल/पासवर्ड / Incorrect email or password');
     }
-  });
+  }));
 
   // --- Email: sign-in link ---
   const sendLink = async () => {
@@ -195,54 +217,72 @@ export function showLoginModal({ onSuccess } = {}) {
       showError(err.message || 'लिंक भेजने में त्रुटि / Failed to send link');
     }
   };
-  overlay.querySelector('#authSendLinkBtn').addEventListener('click', sendLink);
-  overlay.querySelector('#authEmailResendBtn').addEventListener('click', sendLink);
+  const sendLinkBtn = overlay.querySelector('#authSendLinkBtn');
+  const resendLinkBtn = overlay.querySelector('#authEmailResendBtn');
+  sendLinkBtn.addEventListener('click', withBusy(sendLinkBtn, sendLink));
+  resendLinkBtn.addEventListener('click', withBusy(resendLinkBtn, sendLink));
 
-  overlay.querySelector('#authEmailContinueBtn').addEventListener('click', async () => {
-    const user = await auth.refreshSession();
-    if (user) {
-      succeed();
-    } else {
-      showError(
-        'अभी साइन-इन नहीं हुआ — पहले ईमेल में लिंक पर क्लिक करें / Not signed in yet — click the link in your email first'
-      );
-    }
-  });
+  const continueBtn = overlay.querySelector('#authEmailContinueBtn');
+  continueBtn.addEventListener(
+    'click',
+    withBusy(continueBtn, async () => {
+      const user = await auth.refreshSession();
+      if (user) {
+        succeed();
+      } else {
+        showError(
+          'अभी साइन-इन नहीं हुआ — पहले ईमेल में लिंक पर क्लिक करें / Not signed in yet — click the link in your email first'
+        );
+      }
+    })
+  );
 
   // --- Mobile: OTP code ---
   let phone = '';
-  overlay.querySelector('#authSendPhoneOtpBtn').addEventListener('click', async () => {
-    const raw = overlay.querySelector('#authPhoneInput').value.trim();
-    if (!raw) return showError('कृपया मोबाइल नंबर दर्ज करें / Enter a mobile number');
-    try {
-      phone = await auth.sendPhoneOtp(raw);
-      overlay.querySelector('#authPhoneStep1').classList.add('hidden');
-      overlay.querySelector('#authPhoneStep2').classList.remove('hidden');
-      overlay.querySelector('#authPhoneEcho').textContent = phone;
-      errorBox.classList.add('hidden');
-    } catch (err) {
-      showError(err.message || 'OTP भेजने में त्रुटि / Failed to send OTP');
-    }
-  });
+  const sendOtpBtn = overlay.querySelector('#authSendPhoneOtpBtn');
+  sendOtpBtn.addEventListener(
+    'click',
+    withBusy(sendOtpBtn, async () => {
+      const raw = overlay.querySelector('#authPhoneInput').value.trim();
+      if (!raw) return showError('कृपया मोबाइल नंबर दर्ज करें / Enter a mobile number');
+      try {
+        phone = await auth.sendPhoneOtp(raw);
+        overlay.querySelector('#authPhoneStep1').classList.add('hidden');
+        overlay.querySelector('#authPhoneStep2').classList.remove('hidden');
+        overlay.querySelector('#authPhoneEcho').textContent = phone;
+        errorBox.classList.add('hidden');
+      } catch (err) {
+        showError(err.message || 'OTP भेजने में त्रुटि / Failed to send OTP');
+      }
+    })
+  );
 
-  overlay.querySelector('#authPhoneResendBtn').addEventListener('click', async () => {
-    try {
-      await auth.sendPhoneOtp(phone);
-    } catch (err) {
-      showError(err.message);
-    }
-  });
+  const resendOtpBtn = overlay.querySelector('#authPhoneResendBtn');
+  resendOtpBtn.addEventListener(
+    'click',
+    withBusy(resendOtpBtn, async () => {
+      try {
+        await auth.sendPhoneOtp(phone);
+      } catch (err) {
+        showError(err.message);
+      }
+    })
+  );
 
-  overlay.querySelector('#authPhoneVerifyBtn').addEventListener('click', async () => {
-    const code = overlay.querySelector('#authPhoneOtpInput').value.trim();
-    if (!code) return showError('कृपया कोड दर्ज करें / Enter the code');
-    try {
-      await auth.verifyPhoneOtp(phone, code);
-      succeed();
-    } catch (err) {
-      showError(err.message || 'गलत/समाप्त कोड / Invalid or expired code');
-    }
-  });
+  const verifyOtpBtn = overlay.querySelector('#authPhoneVerifyBtn');
+  verifyOtpBtn.addEventListener(
+    'click',
+    withBusy(verifyOtpBtn, async () => {
+      const code = overlay.querySelector('#authPhoneOtpInput').value.trim();
+      if (!code) return showError('कृपया कोड दर्ज करें / Enter the code');
+      try {
+        await auth.verifyPhoneOtp(phone, code);
+        succeed();
+      } catch (err) {
+        showError(err.message || 'गलत/समाप्त कोड / Invalid or expired code');
+      }
+    })
+  );
 
   // Covers the email-link path (phone verify above already resolves directly,
   // but this also fires for it — succeed() is idempotent either way).

@@ -1,5 +1,6 @@
 import { billingApi } from '../billing/api.js';
 import { billing } from '../billing/entitlement.js';
+import { gatePrintDocument } from '../registry/print-gate.js';
 
 export async function showDeviceLimitModal(context) {
   const existing = document.getElementById('deviceLimitModal');
@@ -33,9 +34,22 @@ export async function showDeviceLimitModal(context) {
 
   list.querySelectorAll('button[data-device-id]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      await billingApi.deleteDevice(btn.dataset.deviceId);
-      await billing.refreshEntitlement();
-      overlay.remove();
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'हटाया जा रहा है… / Removing…';
+      try {
+        await billingApi.deleteDevice(btn.dataset.deviceId);
+        await billing.refreshEntitlement();
+        overlay.remove();
+        // The whole point of freeing a device slot is to let this print
+        // proceed — re-run the gate instead of leaving the user to notice
+        // the popup closed and tap Print again themselves.
+        if (window.__registryHooks) gatePrintDocument(window.__registryHooks);
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        alert(err.message || 'डिवाइस हटाने में त्रुटि / Failed to remove device — try again.');
+      }
     });
   });
 }
