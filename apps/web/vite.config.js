@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { resolve } from 'node:path';
+import JavaScriptObfuscator from 'javascript-obfuscator';
 
 // GitHub Pages serves a project (non-custom-domain) site under
 // /<repo-name>/, not the domain root — every asset/HTML reference needs
@@ -30,6 +31,38 @@ function stripPwaFromSecondaryPages() {
           .replace(/<link rel="manifest"[^>]*>/, '')
           .replace(/<script id="vite-plugin-pwa:register-sw"[^>]*><\/script>/, '');
       }
+    },
+  };
+}
+
+// Minification alone (Vite's default) keeps logic trivially readable once
+// reformatted in DevTools — variable/function names survive, just short.
+// This renames identifiers to hex, splits/encodes string literals into a
+// shuffled lookup array, and adds light control-flow obfuscation, so
+// opening DevTools shows unreadable noise instead of near-original source.
+// This is a deterrent against casual copying, NOT a security boundary —
+// nothing here should ever substitute for keeping real secrets and
+// authorization checks server-side (which this app already does).
+function obfuscateOwnCode() {
+  return {
+    name: 'obfuscate-own-code',
+    apply: 'build',
+    renderChunk(code, chunk) {
+      if (!chunk.fileName.endsWith('.js')) return null;
+      const result = JavaScriptObfuscator.obfuscate(code, {
+        compact: true,
+        controlFlowFlattening: true,
+        controlFlowFlatteningThreshold: 0.3,
+        deadCodeInjection: false,
+        stringArray: true,
+        stringArrayThreshold: 0.75,
+        stringArrayEncoding: ['base64'],
+        identifierNamesGenerator: 'hexadecimal',
+        renameGlobals: false,
+        selfDefending: false,
+        disableConsoleOutput: false,
+      });
+      return { code: result.getObfuscatedCode(), map: null };
     },
   };
 }
@@ -87,5 +120,6 @@ export default defineConfig({
       },
     }),
     stripPwaFromSecondaryPages(),
+    obfuscateOwnCode(),
   ],
 });
